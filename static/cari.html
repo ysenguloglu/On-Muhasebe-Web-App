@@ -111,7 +111,19 @@
             display: grid;
             grid-template-columns: 80px 200px 100px 120px 180px 120px 100px 100px 80px 100px;
         }
-        th, td {
+        th {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;

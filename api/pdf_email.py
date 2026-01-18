@@ -52,14 +52,14 @@ async def pdf_olustur_api(evrak: IsEvrakiCreateWithEmail, urunler: List[Dict]) -
         urun_tablo_html = ""
         toplam_tutar = 0
         if urunler:
-            urun_tablo_html = '<h2 style="color: #1f538d; margin-top: 12px; margin-bottom: 8px; font-size: 13px;">Kullanılan Ürünler</h2><table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9px;"><thead><tr style="background-color: #1f538d; color: white;"><th style="padding: 4px; border: 1px solid #ddd; text-align: left; font-size: 8px;">Ürün Kodu</th><th style="padding: 4px; border: 1px solid #ddd; text-align: left; font-size: 8px;">Ürün Adı</th><th style="padding: 4px; border: 1px solid #ddd; text-align: center; font-size: 8px;">Adet</th><th style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 8px;">Birim Fiyat</th><th style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 8px;">Toplam</th></tr></thead><tbody>'
+            urun_tablo_html = '<h2 style="color: #1f538d; margin-top: 12px; margin-bottom: 8px; font-size: 16px;">Kullanılan Ürünler</h2><table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px;"><thead><tr style="background-color: #1f538d; color: white;"><th style="padding: 4px; border: 1px solid #ddd; text-align: left; font-size: 10px;">Ürün Kodu</th><th style="padding: 4px; border: 1px solid #ddd; text-align: left; font-size: 10px;">Ürün Adı</th><th style="padding: 4px; border: 1px solid #ddd; text-align: center; font-size: 10px;">Adet</th><th style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 10px;">Birim Fiyat</th><th style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 10px;">Toplam</th></tr></thead><tbody>'
             
             for urun in urunler:
                 urun_kodu = urun.get("urun_kodu", "") or "-"
-                urun_tablo_html += f'<tr><td style="padding: 3px; border: 1px solid #ddd; font-size: 8px;">{urun_kodu}</td><td style="padding: 3px; border: 1px solid #ddd; font-size: 8px;">{urun["urun_adi"]}</td><td style="padding: 3px; border: 1px solid #ddd; text-align: center; font-size: 8px;">{urun["adet"]}</td><td style="padding: 3px; border: 1px solid #ddd; text-align: right; font-size: 8px;">{urun["birim_fiyat"]:.2f} ₺</td><td style="padding: 3px; border: 1px solid #ddd; text-align: right; font-size: 8px;">{urun["toplam"]:.2f} ₺</td></tr>'
+                urun_tablo_html += f'<tr><td style="padding: 3px; border: 1px solid #ddd; font-size: 10px;">{urun_kodu}</td><td style="padding: 3px; border: 1px solid #ddd; font-size: 10px;">{urun["urun_adi"]}</td><td style="padding: 3px; border: 1px solid #ddd; text-align: center; font-size: 10px;">{urun["adet"]}</td><td style="padding: 3px; border: 1px solid #ddd; text-align: right; font-size: 10px;">{urun["birim_fiyat"]:.2f} ₺</td><td style="padding: 3px; border: 1px solid #ddd; text-align: right; font-size: 10px;">{urun["toplam"]:.2f} ₺</td></tr>'
                 toplam_tutar += urun["toplam"]
             
-            urun_tablo_html += f'<tr style="background-color: #e8f0f8; font-weight: bold;"><td colspan="4" style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 8px;">TOPLAM:</td><td style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 8px;">{toplam_tutar:.2f} ₺</td></tr></tbody></table>'
+            urun_tablo_html += f'<tr style="background-color: #e8f0f8; font-weight: bold;"><td colspan="4" style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 10px;">TOPLAM:</td><td style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 10px;">{toplam_tutar:.2f} ₺</td></tr></tbody></table>'
         
         # Belge oluşturma tarihi ve saati
         olusturma_tarihi = datetime.now().strftime('%d.%m.%Y')
@@ -79,13 +79,13 @@ body {{
     margin: 0;
     padding: 0;
     color: #333;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.3;
 }}
 h1 {{
     color: #1f538d;
     text-align: center;
-    font-size: 18px;
+    font-size: 21px;
     margin-bottom: 8px;
     margin-top: 0;
     padding-bottom: 5px;
@@ -97,19 +97,19 @@ h1 {{
     border-bottom: 2px solid #1f538d;
 }}
 .company-name {{
-    font-size: 12px;
+    font-size: 15px;
     font-weight: bold;
     color: #1f538d;
     margin-bottom: 4px;
 }}
 .company-details {{
-    font-size: 9px;
+    font-size: 11px;
     color: #555;
     line-height: 1.4;
 }}
 .document-info {{
     text-align: right;
-    font-size: 8px;
+    font-size: 10px;
     color: #666;
     margin-bottom: 10px;
     padding-bottom: 5px;
@@ -117,7 +117,7 @@ h1 {{
 }}
 h2 {{
     color: #1f538d;
-    font-size: 13px;
+    font-size: 16px;
     margin-top: 12px;
     margin-bottom: 8px;
 }}
@@ -129,7 +129,7 @@ h2 {{
 .two-column-table td {{
     padding: 4px 6px;
     border: 1px solid #ddd;
-    font-size: 9px;
+    font-size: 11px;
     vertical-align: top;
     line-height: 1.2;
 }}
@@ -150,7 +150,7 @@ h2 {{
 .notes-section ul {{
     margin-top: 8px;
     padding-left: 18px;
-    font-size: 8px;
+    font-size: 10px;
     line-height: 1.4;
     margin-bottom: 10px;
 }}
@@ -171,7 +171,7 @@ h2 {{
 }}
 .signature-box div {{
     margin-bottom: 30px;
-    font-size: 9px;
+    font-size: 11px;
 }}
 .signature-line {{
     border-top: 1px solid #333;
