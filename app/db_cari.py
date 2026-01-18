@@ -175,7 +175,13 @@ class CariDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            # PostgreSQL için RealDictCursor, SQLite için normal cursor
+            if self.db.is_postgres:
+                from psycopg2.extras import RealDictCursor
+                cursor = conn.cursor(cursor_factory=RealDictCursor)
+            else:
+                cursor = conn.cursor()
+            
             if self.db.is_postgres:
                 # PostgreSQL için ~ (regex) operatörü kullan
                 query = """
@@ -196,12 +202,20 @@ class CariDB:
                 """
             cursor.execute(query)
             row = cursor.fetchone()
-            if row and row[0]:
-                try:
-                    son_kod = int(row[0])
-                    return str(son_kod + 1)
-                except ValueError:
-                    pass
+            
+            # PostgreSQL ve SQLite için farklı erişim
+            if row:
+                if self.db.is_postgres:
+                    cari_kodu = row['cari_kodu']
+                else:
+                    cari_kodu = row[0]
+                
+                if cari_kodu:
+                    try:
+                        son_kod = int(cari_kodu)
+                        return str(son_kod + 1)
+                    except ValueError:
+                        pass
             return "1"
         finally:
             if conn:

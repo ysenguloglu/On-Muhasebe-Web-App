@@ -175,15 +175,26 @@ class IsEvrakiDB:
     def is_emri_no_sonraki(self) -> int:
         """En küçük kullanılmayan pozitif iş emri numarasını döndür"""
         conn = self.db.connect()
-        cursor = conn.cursor()
+        
+        # PostgreSQL için RealDictCursor, SQLite için normal cursor
+        if self.db.is_postgres:
+            from psycopg2.extras import RealDictCursor
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            cursor = conn.cursor()
         
         # Tüm iş emri numaralarını al (pozitif olanlar)
         cursor.execute("SELECT DISTINCT is_emri_no FROM is_evraki WHERE is_emri_no > 0 ORDER BY is_emri_no")
         rows = cursor.fetchall()
         self.db.close()
         
-        # Kullanılan numaraları set'e çevir
-        kullanilan_nolar = {row[0] for row in rows}
+        # Kullanılan numaraları set'e çevir - PostgreSQL ve SQLite için farklı erişim
+        if self.db.is_postgres:
+            # PostgreSQL: RealDictCursor kullanıldığı için dict erişimi
+            kullanilan_nolar = {row['is_emri_no'] for row in rows}
+        else:
+            # SQLite: Normal cursor, index erişimi
+            kullanilan_nolar = {row[0] for row in rows}
         
         # 1'den başlayarak ilk kullanılmayan numarayı bul
         for numara in range(1, 10000):  # Maksimum 9999'a kadar kontrol et
