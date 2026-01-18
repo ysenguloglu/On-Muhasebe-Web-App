@@ -132,161 +132,178 @@ class DatabaseConnection:
     
     def init_database(self):
         """Veritabanı tablolarını oluştur"""
-        conn = self.connect()
-        cursor = conn.cursor()
-        
-        if self.is_postgres:
-            # PostgreSQL için SQL syntax
-            # Stok tablosu
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS stok (
-                    id SERIAL PRIMARY KEY,
-                    urun_kodu VARCHAR(255) UNIQUE,
-                    urun_adi VARCHAR(255) NOT NULL,
-                    marka VARCHAR(255),
-                    birim VARCHAR(50) DEFAULT 'Adet',
-                    stok_miktari NUMERIC(10, 2) DEFAULT 0,
-                    birim_fiyat NUMERIC(10, 2) DEFAULT 0,
-                    aciklama TEXT,
-                    olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+        conn = None
+        try:
+            conn = self.connect()
+            cursor = conn.cursor()
             
-            # Cari hesap tablosu
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS cari (
-                    id SERIAL PRIMARY KEY,
-                    cari_kodu VARCHAR(255) UNIQUE,
-                    unvan VARCHAR(255) NOT NULL,
-                    tip VARCHAR(50) NOT NULL CHECK(tip IN ('Müşteri', 'Tedarikçi')),
-                    telefon VARCHAR(50),
-                    email VARCHAR(255),
-                    adres TEXT,
-                    tc_kimlik_no VARCHAR(11) UNIQUE,
-                    vergi_no VARCHAR(50),
-                    vergi_dairesi VARCHAR(255),
-                    bakiye NUMERIC(10, 2) DEFAULT 0,
-                    aciklama TEXT,
-                    firma_tipi VARCHAR(50) DEFAULT 'Şahıs',
-                    olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+            if self.is_postgres:
+                # PostgreSQL için SQL syntax
+                # Stok tablosu
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS stok (
+                        id SERIAL PRIMARY KEY,
+                        urun_kodu VARCHAR(255) UNIQUE,
+                        urun_adi VARCHAR(255) NOT NULL,
+                        marka VARCHAR(255),
+                        birim VARCHAR(50) DEFAULT 'Adet',
+                        stok_miktari NUMERIC(10, 2) DEFAULT 0,
+                        birim_fiyat NUMERIC(10, 2) DEFAULT 0,
+                        aciklama TEXT,
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Cari hesap tablosu
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS cari (
+                        id SERIAL PRIMARY KEY,
+                        cari_kodu VARCHAR(255) UNIQUE,
+                        unvan VARCHAR(255) NOT NULL,
+                        tip VARCHAR(50) NOT NULL CHECK(tip IN ('Müşteri', 'Tedarikçi')),
+                        telefon VARCHAR(50),
+                        email VARCHAR(255),
+                        adres TEXT,
+                        tc_kimlik_no VARCHAR(11) UNIQUE,
+                        vergi_no VARCHAR(50),
+                        vergi_dairesi VARCHAR(255),
+                        bakiye NUMERIC(10, 2) DEFAULT 0,
+                        aciklama TEXT,
+                        firma_tipi VARCHAR(50) DEFAULT 'Şahıs',
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # İş evrakı tablosu
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS is_evraki (
+                        id SERIAL PRIMARY KEY,
+                        is_emri_no INTEGER NOT NULL,
+                        tarih VARCHAR(50) NOT NULL,
+                        musteri_unvan VARCHAR(255) NOT NULL,
+                        telefon VARCHAR(50),
+                        arac_plakasi VARCHAR(20),
+                        cekici_dorse VARCHAR(50),
+                        marka_model VARCHAR(255),
+                        talep_edilen_isler TEXT,
+                        musteri_sikayeti TEXT,
+                        yapilan_is TEXT,
+                        baslama_saati VARCHAR(10),
+                        bitis_saati VARCHAR(10),
+                        kullanilan_urunler TEXT,
+                        toplam_tutar NUMERIC(10, 2) DEFAULT 0,
+                        tc_kimlik_no VARCHAR(11),
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # PostgreSQL için migration (firma_tipi kolonu)
+                try:
+                    cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")
+                    cursor.execute("UPDATE cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
+                except Exception:
+                    pass  # Kolon zaten varsa hata vermez
+            else:
+                # SQLite için SQL syntax
+                # Stok tablosu
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS stok (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        urun_kodu TEXT UNIQUE,
+                        urun_adi TEXT NOT NULL,
+                        marka TEXT,
+                        birim TEXT DEFAULT 'Adet',
+                        stok_miktari REAL DEFAULT 0,
+                        birim_fiyat REAL DEFAULT 0,
+                        aciklama TEXT,
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Cari hesap tablosu
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS cari (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        cari_kodu TEXT UNIQUE,
+                        unvan TEXT NOT NULL,
+                        tip TEXT NOT NULL CHECK(tip IN ('Müşteri', 'Tedarikçi')),
+                        telefon TEXT,
+                        email TEXT,
+                        adres TEXT,
+                        tc_kimlik_no TEXT UNIQUE,
+                        vergi_no TEXT,
+                        vergi_dairesi TEXT,
+                        bakiye REAL DEFAULT 0,
+                        aciklama TEXT,
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # İş evrakı tablosu
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS is_evraki (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        is_emri_no INTEGER NOT NULL,
+                        tarih TEXT NOT NULL,
+                        musteri_unvan TEXT NOT NULL,
+                        telefon TEXT,
+                        arac_plakasi TEXT,
+                        cekici_dorse TEXT,
+                        marka_model TEXT,
+                        talep_edilen_isler TEXT,
+                        musteri_sikayeti TEXT,
+                        yapilan_is TEXT,
+                        baslama_saati TEXT,
+                        bitis_saati TEXT,
+                        kullanilan_urunler TEXT,
+                        toplam_tutar REAL DEFAULT 0,
+                        tc_kimlik_no TEXT,
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Migration: Eski veritabanları için kolon ekleme (sadece SQLite için)
+                try:
+                    cursor.execute("ALTER TABLE stok ADD COLUMN marka TEXT")
+                except sqlite3.OperationalError:
+                    pass
+                
+                try:
+                    cursor.execute("ALTER TABLE cari ADD COLUMN tc_kimlik_no TEXT UNIQUE")
+                except sqlite3.OperationalError:
+                    pass
+                
+                try:
+                    cursor.execute("ALTER TABLE is_evraki ADD COLUMN tc_kimlik_no TEXT")
+                except sqlite3.OperationalError:
+                    pass
+                
+                # Migration: firma_tipi kolonu ekle
+                try:
+                    cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi TEXT DEFAULT 'Şahıs'")
+                    cursor.execute("UPDATE cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
+                except sqlite3.OperationalError:
+                    pass
             
-            # İş evrakı tablosu
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS is_evraki (
-                    id SERIAL PRIMARY KEY,
-                    is_emri_no INTEGER NOT NULL,
-                    tarih VARCHAR(50) NOT NULL,
-                    musteri_unvan VARCHAR(255) NOT NULL,
-                    telefon VARCHAR(50),
-                    arac_plakasi VARCHAR(20),
-                    cekici_dorse VARCHAR(50),
-                    marka_model VARCHAR(255),
-                    talep_edilen_isler TEXT,
-                    musteri_sikayeti TEXT,
-                    yapilan_is TEXT,
-                    baslama_saati VARCHAR(10),
-                    bitis_saati VARCHAR(10),
-                    kullanilan_urunler TEXT,
-                    toplam_tutar NUMERIC(10, 2) DEFAULT 0,
-                    tc_kimlik_no VARCHAR(11),
-                    olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-        else:
-            # SQLite için SQL syntax
-            # Stok tablosu
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS stok (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    urun_kodu TEXT UNIQUE,
-                    urun_adi TEXT NOT NULL,
-                    marka TEXT,
-                    birim TEXT DEFAULT 'Adet',
-                    stok_miktari REAL DEFAULT 0,
-                    birim_fiyat REAL DEFAULT 0,
-                    aciklama TEXT,
-                    olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Cari hesap tablosu
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS cari (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    cari_kodu TEXT UNIQUE,
-                    unvan TEXT NOT NULL,
-                    tip TEXT NOT NULL CHECK(tip IN ('Müşteri', 'Tedarikçi')),
-                    telefon TEXT,
-                    email TEXT,
-                    adres TEXT,
-                    tc_kimlik_no TEXT UNIQUE,
-                    vergi_no TEXT,
-                    vergi_dairesi TEXT,
-                    bakiye REAL DEFAULT 0,
-                    aciklama TEXT,
-                    olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # İş evrakı tablosu
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS is_evraki (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    is_emri_no INTEGER NOT NULL,
-                    tarih TEXT NOT NULL,
-                    musteri_unvan TEXT NOT NULL,
-                    telefon TEXT,
-                    arac_plakasi TEXT,
-                    cekici_dorse TEXT,
-                    marka_model TEXT,
-                    talep_edilen_isler TEXT,
-                    musteri_sikayeti TEXT,
-                    yapilan_is TEXT,
-                    baslama_saati TEXT,
-                    bitis_saati TEXT,
-                    kullanilan_urunler TEXT,
-                    toplam_tutar REAL DEFAULT 0,
-                    tc_kimlik_no TEXT,
-                    olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Migration: Eski veritabanları için kolon ekleme (sadece SQLite için)
+            conn.commit()
+            print("✅ Veritabanı tabloları başarıyla oluşturuldu/doğrulandı")
+        except Exception as e:
+            # Hata durumunda logla
+            print(f"❌ Veritabanı tablo oluşturma hatası: {e}")
+            import traceback
+            traceback.print_exc()
             try:
-                cursor.execute("ALTER TABLE stok ADD COLUMN marka TEXT")
-            except sqlite3.OperationalError:
+                if conn:
+                    conn.rollback()
+                    self.close()
+            except:
                 pass
-            
-            try:
-                cursor.execute("ALTER TABLE cari ADD COLUMN tc_kimlik_no TEXT UNIQUE")
-            except sqlite3.OperationalError:
-                pass
-            
-            try:
-                cursor.execute("ALTER TABLE is_evraki ADD COLUMN tc_kimlik_no TEXT")
-            except sqlite3.OperationalError:
-                pass
-            
-            # Migration: firma_tipi kolonu ekle
-            try:
-                cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi TEXT DEFAULT 'Şahıs'")
-                cursor.execute("UPDATE cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
-            except sqlite3.OperationalError:
-                pass
-        
-        # PostgreSQL için migration (firma_tipi kolonu)
-        if self.is_postgres:
-            try:
-                cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")
-                cursor.execute("UPDATE cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
-            except Exception:
-                pass  # Kolon zaten varsa hata vermez
-        
-        conn.commit()
-        self.close()
+            # Hata olsa bile devam et, belki tablolar zaten var
+            raise
+        finally:
+            if conn:
+                self.close()
