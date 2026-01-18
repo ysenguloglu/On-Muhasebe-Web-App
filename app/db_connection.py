@@ -146,85 +146,107 @@ class DatabaseConnection:
             if self.is_postgres:
                 # PostgreSQL için schema'yı ayarla (varsayılan: public)
                 cursor.execute("SET search_path TO public;")
+                conn.commit()
                 
                 # PostgreSQL için SQL syntax - Schema'yı açıkça belirt
-                # Stok tablosu
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS public.stok (
-                        id SERIAL PRIMARY KEY,
-                        urun_kodu VARCHAR(255) UNIQUE,
-                        urun_adi VARCHAR(255) NOT NULL,
-                        marka VARCHAR(255),
-                        birim VARCHAR(50) DEFAULT 'Adet',
-                        stok_miktari NUMERIC(10, 2) DEFAULT 0,
-                        birim_fiyat NUMERIC(10, 2) DEFAULT 0,
-                        aciklama TEXT,
-                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
+                # Her tablo için ayrı transaction kullan
+                try:
+                    # Stok tablosu
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS public.stok (
+                            id SERIAL PRIMARY KEY,
+                            urun_kodu VARCHAR(255) UNIQUE,
+                            urun_adi VARCHAR(255) NOT NULL,
+                            marka VARCHAR(255),
+                            birim VARCHAR(50) DEFAULT 'Adet',
+                            stok_miktari NUMERIC(10, 2) DEFAULT 0,
+                            birim_fiyat NUMERIC(10, 2) DEFAULT 0,
+                            aciklama TEXT,
+                            olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    conn.commit()
+                except Exception as e:
+                    conn.rollback()
+                    print(f"⚠️ Stok tablosu oluşturma hatası (devam ediliyor): {e}")
                 
-                # Cari hesap tablosu
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS public.cari (
-                        id SERIAL PRIMARY KEY,
-                        cari_kodu VARCHAR(255) UNIQUE,
-                        unvan VARCHAR(255) NOT NULL,
-                        tip VARCHAR(50) NOT NULL CHECK(tip IN ('Müşteri', 'Tedarikçi')),
-                        telefon VARCHAR(50),
-                        email VARCHAR(255),
-                        adres TEXT,
-                        tc_kimlik_no VARCHAR(11) UNIQUE,
-                        vergi_no VARCHAR(50),
-                        vergi_dairesi VARCHAR(255),
-                        bakiye NUMERIC(10, 2) DEFAULT 0,
-                        aciklama TEXT,
-                        firma_tipi VARCHAR(50) DEFAULT 'Şahıs',
-                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
+                try:
+                    # Cari hesap tablosu
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS public.cari (
+                            id SERIAL PRIMARY KEY,
+                            cari_kodu VARCHAR(255) UNIQUE,
+                            unvan VARCHAR(255) NOT NULL,
+                            tip VARCHAR(50) NOT NULL CHECK(tip IN ('Müşteri', 'Tedarikçi')),
+                            telefon VARCHAR(50),
+                            email VARCHAR(255),
+                            adres TEXT,
+                            tc_kimlik_no VARCHAR(11) UNIQUE,
+                            vergi_no VARCHAR(50),
+                            vergi_dairesi VARCHAR(255),
+                            bakiye NUMERIC(10, 2) DEFAULT 0,
+                            aciklama TEXT,
+                            firma_tipi VARCHAR(50) DEFAULT 'Şahıs',
+                            olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    conn.commit()
+                except Exception as e:
+                    conn.rollback()
+                    print(f"⚠️ Cari tablosu oluşturma hatası (devam ediliyor): {e}")
                 
-                # İş evrakı tablosu
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS public.is_evraki (
-                        id SERIAL PRIMARY KEY,
-                        is_emri_no INTEGER NOT NULL,
-                        tarih VARCHAR(50) NOT NULL,
-                        musteri_unvan VARCHAR(255) NOT NULL,
-                        telefon VARCHAR(50),
-                        arac_plakasi VARCHAR(20),
-                        cekici_dorse VARCHAR(50),
-                        marka_model VARCHAR(255),
-                        talep_edilen_isler TEXT,
-                        musteri_sikayeti TEXT,
-                        yapilan_is TEXT,
-                        baslama_saati VARCHAR(10),
-                        bitis_saati VARCHAR(10),
-                        kullanilan_urunler TEXT,
-                        toplam_tutar NUMERIC(10, 2) DEFAULT 0,
-                        tc_kimlik_no VARCHAR(11),
-                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
+                try:
+                    # İş evrakı tablosu
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS public.is_evraki (
+                            id SERIAL PRIMARY KEY,
+                            is_emri_no INTEGER NOT NULL,
+                            tarih VARCHAR(50) NOT NULL,
+                            musteri_unvan VARCHAR(255) NOT NULL,
+                            telefon VARCHAR(50),
+                            arac_plakasi VARCHAR(20),
+                            cekici_dorse VARCHAR(50),
+                            marka_model VARCHAR(255),
+                            talep_edilen_isler TEXT,
+                            musteri_sikayeti TEXT,
+                            yapilan_is TEXT,
+                            baslama_saati VARCHAR(10),
+                            bitis_saati VARCHAR(10),
+                            kullanilan_urunler TEXT,
+                            toplam_tutar NUMERIC(10, 2) DEFAULT 0,
+                            tc_kimlik_no VARCHAR(11),
+                            olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    conn.commit()
+                except Exception as e:
+                    conn.rollback()
+                    print(f"⚠️ İş evrakı tablosu oluşturma hatası (devam ediliyor): {e}")
                 
                 # PostgreSQL için migration (firma_tipi kolonu)
                 try:
                     cursor.execute("ALTER TABLE public.cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")
                     cursor.execute("UPDATE public.cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
+                    conn.commit()
                 except Exception:
+                    conn.rollback()
                     pass  # Kolon zaten varsa hata vermez
                 
-                # Tabloların oluşturulduğunu doğrula
-                cursor.execute("""
-                    SELECT table_name 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name IN ('stok', 'cari', 'is_evraki')
-                """)
-                tables = cursor.fetchall()
-                table_names = [row['table_name'] if isinstance(row, dict) else row[0] for row in tables]
-                print(f"📊 Oluşturulan tablolar: {', '.join(table_names) if table_names else 'HİÇBİR TABLO BULUNAMADI!'}")
+                # Tabloların oluşturulduğunu doğrula (yeni transaction)
+                try:
+                    cursor.execute("""
+                        SELECT table_name 
+                        FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name IN ('stok', 'cari', 'is_evraki')
+                    """)
+                    tables = cursor.fetchall()
+                    table_names = [row['table_name'] if isinstance(row, dict) else row[0] for row in tables]
+                    print(f"📊 Oluşturulan tablolar: {', '.join(table_names) if table_names else 'HİÇBİR TABLO BULUNAMADI!'}")
+                except Exception as e:
+                    print(f"⚠️ Tablo kontrolü hatası: {e}")
             else:
                 # SQLite için SQL syntax
                 # Stok tablosu
