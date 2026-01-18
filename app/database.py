@@ -9,16 +9,17 @@ from .db_is_evraki import IsEvrakiDB
 
 
 class Database:
-    """SQLite veritabanı yönetim sınıfı - Tüm modülleri birleştirir"""
+    """Veritabanı yönetim sınıfı - SQLite ve PostgreSQL desteği - Tüm modülleri birleştirir"""
     
-    def __init__(self, db_path: str = "on_muhasebe.db"):
+    def __init__(self, db_path: str = "on_muhasebe.db", database_url: str = None):
         """
         Veritabanı bağlantısı oluştur
         
         Args:
-            db_path: Veritabanı dosya yolu
+            db_path: SQLite veritabanı dosya yolu (SQLite için)
+            database_url: PostgreSQL connection string (PostgreSQL için)
         """
-        self.db_conn = DatabaseConnection(db_path)
+        self.db_conn = DatabaseConnection(db_path=db_path, database_url=database_url)
         self.db_conn.init_database()
         
         # Alt modülleri başlat

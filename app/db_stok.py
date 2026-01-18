@@ -1,7 +1,6 @@
 """
 Stok veritabanı işlemleri
 """
-import sqlite3
 from typing import Optional, List, Dict, Tuple, Any
 from .db_connection import DatabaseConnection
 
@@ -20,17 +19,19 @@ class StokDB:
             conn = self.db.connect()
             cursor = conn.cursor()
             urun_kodu_val = urun_kodu if urun_kodu else None
-            cursor.execute("""
+            query = """
                 INSERT INTO stok (urun_kodu, urun_adi, marka, birim, stok_miktari, 
                                 birim_fiyat, aciklama)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (urun_kodu_val, urun_adi, marka, birim, stok_miktari, birim_fiyat, aciklama))
+            """
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (urun_kodu_val, urun_adi, marka, birim, stok_miktari, birim_fiyat, aciklama))
             conn.commit()
             self.db.close()
             return True
-        except sqlite3.IntegrityError:
-            return False
         except Exception as e:
+            if self.db._is_integrity_error(e):
+                return False
             print(f"Stok ekleme hatası: {e}")
             return False
     
@@ -42,18 +43,20 @@ class StokDB:
             conn = self.db.connect()
             cursor = conn.cursor()
             urun_kodu_val = urun_kodu if urun_kodu else None
-            cursor.execute("""
+            query = """
                 UPDATE stok 
                 SET urun_kodu = ?, urun_adi = ?, marka = ?, birim = ?, stok_miktari = ?,
                     birim_fiyat = ?, aciklama = ?, guncelleme_tarihi = CURRENT_TIMESTAMP
                 WHERE id = ?
-            """, (urun_kodu_val, urun_adi, marka, birim, stok_miktari, birim_fiyat, aciklama, stok_id))
+            """
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (urun_kodu_val, urun_adi, marka, birim, stok_miktari, birim_fiyat, aciklama, stok_id))
             conn.commit()
             self.db.close()
             return True
-        except sqlite3.IntegrityError:
-            return False
         except Exception as e:
+            if self.db._is_integrity_error(e):
+                return False
             print(f"Stok güncelleme hatası: {e}")
             return False
     
@@ -62,7 +65,9 @@ class StokDB:
         try:
             conn = self.db.connect()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM stok WHERE id = ?", (stok_id,))
+            query = "DELETE FROM stok WHERE id = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (stok_id,))
             conn.commit()
             self.db.close()
             return True
@@ -76,11 +81,13 @@ class StokDB:
         cursor = conn.cursor()
         
         if arama:
-            cursor.execute("""
+            query = """
                 SELECT * FROM stok 
                 WHERE urun_kodu LIKE ? OR urun_adi LIKE ? OR marka LIKE ?
                 ORDER BY urun_adi
-            """, (f"%{arama}%", f"%{arama}%", f"%{arama}%"))
+            """
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (f"%{arama}%", f"%{arama}%", f"%{arama}%"))
         else:
             cursor.execute("SELECT * FROM stok ORDER BY urun_adi")
         
@@ -92,7 +99,9 @@ class StokDB:
         """Belirli bir ürünü getir"""
         conn = self.db.connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM stok WHERE id = ?", (stok_id,))
+        query = "SELECT * FROM stok WHERE id = ?"
+        query = self.db._convert_placeholders(query)
+        cursor.execute(query, (stok_id,))
         row = cursor.fetchone()
         self.db.close()
         return dict(row) if row else None
@@ -101,7 +110,9 @@ class StokDB:
         """Ürün adı ile ürün ara"""
         conn = self.db.connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM stok WHERE urun_adi = ?", (urun_adi,))
+        query = "SELECT * FROM stok WHERE urun_adi = ?"
+        query = self.db._convert_placeholders(query)
+        cursor.execute(query, (urun_adi,))
         row = cursor.fetchone()
         self.db.close()
         return dict(row) if row else None
@@ -112,7 +123,9 @@ class StokDB:
             return None
         conn = self.db.connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM stok WHERE urun_kodu = ?", (urun_kodu.strip(),))
+        query = "SELECT * FROM stok WHERE urun_kodu = ?"
+        query = self.db._convert_placeholders(query)
+        cursor.execute(query, (urun_kodu.strip(),))
         row = cursor.fetchone()
         self.db.close()
         return dict(row) if row else None
@@ -126,7 +139,9 @@ class StokDB:
         try:
             conn = self.db.connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT id, stok_miktari, urun_adi FROM stok WHERE urun_kodu = ?", (urun_kodu.strip(),))
+            query = "SELECT id, stok_miktari, urun_adi FROM stok WHERE urun_kodu = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (urun_kodu.strip(),))
             row = cursor.fetchone()
             
             if not row:
@@ -140,11 +155,13 @@ class StokDB:
                 return (False, f"Yetersiz stok! Mevcut: {mevcut_miktar}, İstenen: {miktar} (Ürün: {urun_adi})")
             
             yeni_miktar = mevcut_miktar - miktar
-            cursor.execute("""
+            query = """
                 UPDATE stok 
                 SET stok_miktari = ?, guncelleme_tarihi = CURRENT_TIMESTAMP
                 WHERE id = ?
-            """, (yeni_miktar, stok_id))
+            """
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (yeni_miktar, stok_id))
             
             conn.commit()
             self.db.close()
@@ -183,7 +200,9 @@ class StokDB:
                     hata_mesajlari.append(f"{urun_adi} ({urun_kodu}): Miktar 0'dan büyük olmalıdır")
                     continue
                 
-                cursor.execute("SELECT id, stok_miktari, urun_adi FROM stok WHERE urun_kodu = ?", (urun_kodu,))
+                query = "SELECT id, stok_miktari, urun_adi FROM stok WHERE urun_kodu = ?"
+                query = self.db._convert_placeholders(query)
+                cursor.execute(query, (urun_kodu,))
                 row = cursor.fetchone()
                 
                 if not row:
@@ -210,11 +229,13 @@ class StokDB:
             
             for urun_info in urun_bilgileri:
                 yeni_miktar = urun_info["mevcut_miktar"] - urun_info["miktar"]
-                cursor.execute("""
+                query = """
                     UPDATE stok 
                     SET stok_miktari = ?, guncelleme_tarihi = CURRENT_TIMESTAMP
                     WHERE id = ?
-                """, (yeni_miktar, urun_info["stok_id"]))
+                """
+                query = self.db._convert_placeholders(query)
+                cursor.execute(query, (yeni_miktar, urun_info["stok_id"]))
                 basarili_mesajlar.append(f"{urun_info['urun_adi']} ({urun_info['urun_kodu']}): Stok güncellendi (Kalan: {yeni_miktar})")
             
             conn.commit()
