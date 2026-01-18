@@ -37,3 +37,7 @@ dist/
 .env
 .env.local
 .env.*.local
+
+# Gmail API credentials
+credentials.json
+token.json

@@ -207,7 +207,7 @@ Veritabanı dosyasını (`on_muhasebe.db`) kopyalayarak yedek alabilirsiniz. Yed
 
 ## PDF ve E-posta Ayarları
 
-PDF oluşturma için `html2pdf.app` API kullanılmaktadır. E-posta gönderme için Gmail SMTP kullanılır.
+PDF oluşturma için `html2pdf.app` API kullanılmaktadır. E-posta gönderme için **Gmail API** kullanılır (Render.com port kısıtlamaları nedeniyle).
 
 **PDF Özellikleri:**
 - Tek sayfa, profesyonel tasarım
@@ -242,20 +242,59 @@ Uygulama hassas bilgileri environment variable'lardan okur. Yerel geliştirme i�
    EMAIL_TO=recipient@example.com
    ```
 
-**Gmail Uygulama Şifresi Oluşturma:**
-1. Gmail hesabınızda 2 Adımlı Doğrulama aktif olmalı
-2. Uygulama şifresi oluşturun: https://myaccount.google.com/apppasswords
-3. Oluşturulan şifreyi `SMTP_PASSWORD` olarak `.env` dosyasına ekleyin
+**Gmail API Kurulumu:**
+
+Gmail API kullanmak için OAuth 2.0 credentials gereklidir:
+
+1. **Google Cloud Console'da Proje Oluşturun:**
+   - https://console.cloud.google.com/ adresine gidin
+   - Yeni proje oluşturun veya mevcut projeyi seçin
+
+2. **Gmail API'yi Etkinleştirin:**
+   - API Library'den "Gmail API" arayın ve etkinleştirin
+
+3. **OAuth 2.0 Credentials Oluşturun:**
+   - Credentials → Create Credentials → OAuth client ID
+   - Application type: "Desktop app" seçin
+   - Credentials JSON dosyasını indirin
+
+4. **İlk Kurulum (Yerel Geliştirme):**
+   ```python
+   # credentials.json dosyasını proje klasörüne kopyalayın
+   # Python script çalıştırın (tek seferlik):
+   from google_auth_oauthlib.flow import InstalledAppFlow
+   import json
+   
+   SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+   flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+   creds = flow.run_local_server(port=0)
+   
+   # Token'ı kaydedin
+   token_data = {
+       'token': creds.token,
+       'refresh_token': creds.refresh_token,
+       'token_uri': creds.token_uri,
+       'client_id': creds.client_id,
+       'client_secret': creds.client_secret,
+       'scopes': creds.scopes
+   }
+   print(json.dumps(token_data))
+   ```
+
+5. **Environment Variables:**
+   - `GMAIL_CREDENTIALS_JSON`: OAuth client credentials JSON (tek seferlik)
+   - `GMAIL_TOKEN_JSON`: Refresh token JSON (production için - önerilen)
+   - `EMAIL_FROM`: Gönderen e-posta adresi
+   - `EMAIL_TO`: Alıcı e-posta adresi
 
 **Render.com Deployment:**
 Render.com'da environment variable'ları dashboard'dan ekleyin:
 - `PDF_API_KEY`
-- `SMTP_USER`
-- `SMTP_PASSWORD`
+- `GMAIL_TOKEN_JSON` (production için - refresh token içeren JSON)
 - `EMAIL_FROM`
 - `EMAIL_TO`
 
-`SMTP_SERVER` ve `SMTP_PORT` varsayılan değerlerle çalışır (Gmail için).
+**Not:** Render.com'da interactive OAuth flow çalışmaz, bu yüzden `GMAIL_TOKEN_JSON` kullanmanız gerekir.
 
 ## Geliştirme
 
@@ -290,9 +329,17 @@ Bu hata genellikle birden fazla veritabanı instance'ı kullanıldığında olu�
 
 ### E-posta Gönderme Hatası
 
+**"Network is unreachable" veya "errno 101" Hatası:**
+- Render.com free tier'da SMTP portları (587, 465) kısıtlanmış olabilir
+- **Çözüm 1:** Render.com dashboard'dan `SMTP_PORT=465` olarak ayarlayın (SSL kullanır)
+- **Çözüm 2:** Render.com'da paid plan kullanın (SMTP portları açık)
+- **Çözüm 3:** Harici email servisi kullanın (SendGrid, Mailgun, AWS SES)
+
+**Diğer SMTP Hataları:**
 - Gmail hesabınızda 2 Adımlı Doğrulama aktif mi kontrol edin
 - Uygulama şifresinin doğru olduğundan emin olun
 - SMTP ayarlarının doğru olduğundan emin olun
+- Timeout değeri yeterli mi kontrol edin (30 saniye)
 
 ## Lisans
 

@@ -10,15 +10,10 @@ services:
       # PDF API Key - html2pdf.app API key'inizi buraya ekleyin
       - key: PDF_API_KEY
         sync: false
-      # SMTP Ayarları
-      - key: SMTP_SERVER
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: "587"
-      # SMTP Kullanıcı Bilgileri - Render.com dashboard'dan ekleyin
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
+      # Gmail API Ayarları (SMTP yerine - Render.com port kısıtlamaları nedeniyle)
+      # Gmail API için OAuth 2.0 token gereklidir
+      # Kurulum: https://developers.google.com/gmail/api/quickstart/python
+      - key: GMAIL_TOKEN_JSON
         sync: false
       # E-posta Adresleri - Render.com dashboard'dan ekleyin
       - key: EMAIL_FROM

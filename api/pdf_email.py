@@ -284,29 +284,81 @@ h2 {{
 
 
 async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> bool:
-    """E-posta gönder - Gmail SMTP"""
+    """E-posta gönder - Gmail API kullanarak (Render.com port kısıtlamaları nedeniyle)"""
     try:
-        # Environment variable'lardan SMTP ayarlarını al
-        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        smtp_user = os.getenv("SMTP_USER", "")
-        smtp_password = os.getenv("SMTP_PASSWORD", "")
-        email_from = os.getenv("EMAIL_FROM", smtp_user)
+        from google.oauth2.credentials import Credentials
+        from google_auth_oauthlib.flow import InstalledAppFlow
+        from google.auth.transport.requests import Request
+        from googleapiclient.discovery import build
+        import base64
+        import json
+        
+        email_from = os.getenv("EMAIL_FROM", "")
         email_to = os.getenv("EMAIL_TO", "")
         
-        if not smtp_user or not smtp_password:
-            raise Exception("SMTP_USER ve SMTP_PASSWORD environment variable'ları tanımlı olmalı")
+        if not email_from:
+            raise Exception("EMAIL_FROM environment variable tanımlı olmalı")
         if not email_to:
             raise Exception("EMAIL_TO environment variable tanımlı olmalı")
         
+        # Gmail API için OAuth 2.0 credentials
+        # İki yöntem desteklenir:
+        # 1. GMAIL_CREDENTIALS_JSON: OAuth client credentials JSON (tek seferlik setup)
+        # 2. GMAIL_TOKEN_JSON: Refresh token (production için)
+        
+        credentials_json = os.getenv("GMAIL_CREDENTIALS_JSON", "")
+        token_json = os.getenv("GMAIL_TOKEN_JSON", "")
+        
+        creds = None
+        
+        # Token varsa kullan (production)
+        if token_json:
+            try:
+                token_data = json.loads(token_json)
+                creds = Credentials.from_authorized_user_info(token_data)
+            except Exception as e:
+                raise Exception(f"GMAIL_TOKEN_JSON parse hatası: {str(e)}")
+        
+        # Credentials yoksa veya expire olmuşsa, credentials JSON'dan yenile
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                # Token'ı yenile
+                creds.refresh(Request())
+            elif credentials_json:
+                # İlk kez setup - credentials JSON'dan flow başlat
+                try:
+                    creds_data = json.loads(credentials_json)
+                    flow = InstalledAppFlow.from_client_config(
+                        creds_data,
+                        ['https://www.googleapis.com/auth/gmail.send']
+                    )
+                    # Render.com'da interactive flow çalışmaz, bu yüzden token JSON kullanılmalı
+                    raise Exception(
+                        "Gmail API ilk kurulum gerekiyor. Lütfen GMAIL_TOKEN_JSON environment variable'ını ekleyin. "
+                        "Kurulum için: https://developers.google.com/gmail/api/quickstart/python"
+                    )
+                except Exception as e:
+                    raise Exception(f"GMAIL_CREDENTIALS_JSON parse hatası: {str(e)}")
+            else:
+                raise Exception(
+                    "Gmail API için GMAIL_CREDENTIALS_JSON veya GMAIL_TOKEN_JSON environment variable'ı tanımlı olmalı"
+                )
+        
+        # Gmail API servisini oluştur
+        service = build('gmail', 'v1', credentials=creds)
+        
+        # Email mesajını oluştur
+        subject = f"Servis İş Emri - {evrak.arac_plakasi or 'N/A'} - {evrak.musteri_unvan}"
+        body_text = f"""{datetime.now().strftime('%d.%m.%Y')} tarihine ait iş emri PDF olarak ekte gönderilmiştir."""
+        
+        # MIME mesajı oluştur
         msg = MIMEMultipart()
         msg['From'] = email_from
         msg['To'] = email_to
-        msg['Subject'] = f"Servis İş Emri - {evrak.arac_plakasi or 'N/A'} - {evrak.musteri_unvan}"
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body_text, 'plain', 'utf-8'))
         
-        body = f"""{datetime.now().strftime('%d.%m.%Y')} tarihine ait iş emri PDF olarak ekte gönderilmiştir."""
-        msg.attach(MIMEText(body, 'plain', 'utf-8'))
-        
+        # PDF ekini ekle
         with open(pdf_dosyasi, "rb") as attachment:
             part = MIMEBase('application', 'octet-stream')
             part.set_payload(attachment.read())
@@ -317,13 +369,16 @@ async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> 
             )
             msg.attach(part)
         
-        server = smtplib.SMTP(smtp_server, smtp_port, timeout=15)
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
-        server.quit()
+        # Gmail API formatına dönüştür
+        raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+        
+        # Email gönder
+        message = service.users().messages().send(
+            userId='me',
+            body={'raw': raw_message}
+        ).execute()
         
         return True
         
     except Exception as e:
-        raise Exception(f"E-posta gönderme hatası: {str(e)}")
+        raise Exception(f"E-posta gönderme hatası (Gmail API): {str(e)}")
