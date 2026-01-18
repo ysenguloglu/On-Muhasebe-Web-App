@@ -100,9 +100,11 @@ class DatabaseConnection:
             finally:
                 self.conn = None
     
-    def _get_cursor(self):
-        """Cursor oluştur - MySQL için DictCursor, SQLite için normal cursor"""
-        conn = self.connect()
+    def _get_cursor(self, conn=None):
+        """Cursor oluştur - MySQL için DictCursor, SQLite için normal cursor
+        Eğer conn parametresi verilmişse onu kullan, yoksa yeni connection oluştur"""
+        if conn is None:
+            conn = self.connect()
         if self.is_mysql:
             return conn.cursor(DictCursor)
         else:

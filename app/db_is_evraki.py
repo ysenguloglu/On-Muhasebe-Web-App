@@ -22,7 +22,7 @@ class IsEvrakiDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             
             telefon_val = telefon if telefon else None
             arac_plakasi_val = arac_plakasi if arac_plakasi else None
@@ -58,37 +58,36 @@ class IsEvrakiDB:
                 except:
                     pass
             return (False, hata_mesaji)
-        except Exception as e:
-            hata_mesaji = f"Beklenmeyen hata: {str(e)}"
-            print(f"İş evrakı ekleme hatası: {e}")
-            if conn:
-                try:
-                    conn.rollback()
-                except:
-                    pass
-            return (False, hata_mesaji)
         finally:
             self.db.close()
     
     def is_evraki_listele(self) -> List[Dict]:
         """Tüm iş evraklarını listele"""
         conn = self.db.connect()
-        cursor = conn.cursor()
+        cursor = self.db._get_cursor(conn)
         cursor.execute("SELECT * FROM is_evraki ORDER BY olusturma_tarihi DESC")
         rows = cursor.fetchall()
         self.db.close()
-        return [dict(row) for row in rows]
+        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+        if self.db.is_mysql:
+            return list(rows)  # Zaten dictionary listesi
+        else:
+            return [dict(row) for row in rows]  # SQLite Row objesini dict'e çevir
     
     def is_evraki_getir(self, evrak_id: int) -> Dict:
         """ID ile iş evrakı getir"""
         conn = self.db.connect()
-        cursor = conn.cursor()
+        cursor = self.db._get_cursor(conn)
         query = "SELECT * FROM is_evraki WHERE id = ?"
         query = self.db._convert_placeholders(query)
         cursor.execute(query, (evrak_id,))
         row = cursor.fetchone()
         self.db.close()
-        return dict(row) if row else None
+        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+        if self.db.is_mysql:
+            return row if row else None
+        else:
+            return dict(row) if row else None
     
     def is_evraki_guncelle(self, evrak_id: int, is_emri_no: int, tarih: str, musteri_unvan: str,
                            telefon: str = "", arac_plakasi: str = "", cekici_dorse: str = "",
@@ -101,7 +100,7 @@ class IsEvrakiDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             
             telefon_val = telefon if telefon else None
             arac_plakasi_val = arac_plakasi if arac_plakasi else None
@@ -150,7 +149,7 @@ class IsEvrakiDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             query = "DELETE FROM is_evraki WHERE id = ?"
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (evrak_id,))
@@ -175,7 +174,7 @@ class IsEvrakiDB:
     def is_emri_no_sonraki(self) -> int:
         """En küçük kullanılmayan pozitif iş emri numarasını döndür"""
         conn = self.db.connect()
-        cursor = self.db._get_cursor()
+        cursor = self.db._get_cursor(conn)
         
         # Tüm iş emri numaralarını al (pozitif olanlar)
         cursor.execute("SELECT DISTINCT is_emri_no FROM is_evraki WHERE is_emri_no > 0 ORDER BY is_emri_no")

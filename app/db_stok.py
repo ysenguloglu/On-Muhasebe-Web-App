@@ -17,7 +17,7 @@ class StokDB:
         """Yeni ürün ekle"""
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             urun_kodu_val = urun_kodu if urun_kodu else None
             query = """
                 INSERT INTO stok (urun_kodu, urun_adi, marka, birim, stok_miktari, 
@@ -41,7 +41,7 @@ class StokDB:
         """Ürün bilgilerini güncelle"""
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             urun_kodu_val = urun_kodu if urun_kodu else None
             query = """
                 UPDATE stok 
@@ -64,7 +64,7 @@ class StokDB:
         """Ürünü sil"""
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             query = "DELETE FROM stok WHERE id = ?"
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (stok_id,))
@@ -78,7 +78,7 @@ class StokDB:
     def stok_listele(self, arama: str = "") -> List[Dict]:
         """Tüm ürünleri listele"""
         conn = self.db.connect()
-        cursor = self.db._get_cursor()
+        cursor = self.db._get_cursor(conn)
         
         if arama:
             query = """
@@ -103,37 +103,49 @@ class StokDB:
     def stok_getir(self, stok_id: int) -> Optional[Dict]:
         """Belirli bir ürünü getir"""
         conn = self.db.connect()
-        cursor = conn.cursor()
+        cursor = self.db._get_cursor(conn)
         query = "SELECT * FROM stok WHERE id = ?"
         query = self.db._convert_placeholders(query)
         cursor.execute(query, (stok_id,))
         row = cursor.fetchone()
         self.db.close()
-        return dict(row) if row else None
+        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+        if self.db.is_mysql:
+            return row if row else None
+        else:
+            return dict(row) if row else None
     
     def stok_urun_adi_ile_ara(self, urun_adi: str) -> Optional[Dict]:
         """Ürün adı ile ürün ara"""
         conn = self.db.connect()
-        cursor = conn.cursor()
+        cursor = self.db._get_cursor(conn)
         query = "SELECT * FROM stok WHERE urun_adi = ?"
         query = self.db._convert_placeholders(query)
         cursor.execute(query, (urun_adi,))
         row = cursor.fetchone()
         self.db.close()
-        return dict(row) if row else None
+        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+        if self.db.is_mysql:
+            return row if row else None
+        else:
+            return dict(row) if row else None
     
     def stok_urun_kodu_ile_ara(self, urun_kodu: str) -> Optional[Dict]:
         """Ürün kodu ile ürün ara"""
         if not urun_kodu or not urun_kodu.strip():
             return None
         conn = self.db.connect()
-        cursor = conn.cursor()
+        cursor = self.db._get_cursor(conn)
         query = "SELECT * FROM stok WHERE urun_kodu = ?"
         query = self.db._convert_placeholders(query)
         cursor.execute(query, (urun_kodu.strip(),))
         row = cursor.fetchone()
         self.db.close()
-        return dict(row) if row else None
+        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+        if self.db.is_mysql:
+            return row if row else None
+        else:
+            return dict(row) if row else None
     
     def stok_miktar_azalt(self, urun_kodu: str, miktar: float) -> Tuple[bool, str]:
         """Ürün koduna göre stok miktarını azalt"""
@@ -143,7 +155,7 @@ class StokDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             query = "SELECT id, stok_miktari, urun_adi FROM stok WHERE urun_kodu = ?"
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (urun_kodu.strip(),))
@@ -153,7 +165,11 @@ class StokDB:
                 self.db.close()
                 return (False, f"Ürün kodu '{urun_kodu}' stokta bulunamadı")
             
-            stok_id, mevcut_miktar, urun_adi = row['id'], row['stok_miktari'], row['urun_adi']
+            # MySQL'de DictCursor kullanıldığı için dict erişimi, SQLite'da Row objesi
+            if self.db.is_mysql:
+                stok_id, mevcut_miktar, urun_adi = row['id'], row['stok_miktari'], row['urun_adi']
+            else:
+                stok_id, mevcut_miktar, urun_adi = row[0], row[1], row[2]
             
             if mevcut_miktar < miktar:
                 self.db.close()
@@ -189,7 +205,7 @@ class StokDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             
             urun_bilgileri = []
             for urun in urunler:
@@ -214,7 +230,11 @@ class StokDB:
                     hata_mesajlari.append(f"{urun_adi} ({urun_kodu}): Stokta bulunamadı")
                     continue
                 
-                stok_id, mevcut_miktar, db_urun_adi = row['id'], row['stok_miktari'], row['urun_adi']
+                # MySQL'de DictCursor kullanıldığı için dict erişimi, SQLite'da Row objesi
+                if self.db.is_mysql:
+                    stok_id, mevcut_miktar, db_urun_adi = row['id'], row['stok_miktari'], row['urun_adi']
+                else:
+                    stok_id, mevcut_miktar, db_urun_adi = row[0], row[1], row[2]
                 
                 if mevcut_miktar < miktar:
                     hata_mesajlari.append(f"{db_urun_adi} ({urun_kodu}): Yetersiz stok! Mevcut: {mevcut_miktar}, İstenen: {miktar}")

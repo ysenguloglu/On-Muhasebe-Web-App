@@ -19,7 +19,7 @@ class CariDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             cari_kodu_val = cari_kodu.strip() if cari_kodu and cari_kodu.strip() else None
             tc_kimlik_no_val = tc_kimlik_no.strip() if tc_kimlik_no and tc_kimlik_no.strip() else None
             vergi_no_val = vergi_no.strip() if vergi_no and vergi_no.strip() else None
@@ -58,7 +58,7 @@ class CariDB:
         """Cari hesap bilgilerini güncelle"""
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             cari_kodu_val = cari_kodu if cari_kodu else None
             query = """
                 UPDATE cari 
@@ -83,7 +83,7 @@ class CariDB:
         """Cari hesabı sil"""
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             query = "DELETE FROM cari WHERE id = ?"
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (cari_id,))
@@ -97,7 +97,7 @@ class CariDB:
     def cari_listele(self, arama: str = "", tip: str = "") -> List[Dict]:
         """Tüm cari hesapları listele"""
         conn = self.db.connect()
-        cursor = conn.cursor()
+        cursor = self.db._get_cursor(conn)
         
         query = "SELECT * FROM cari WHERE 1=1"
         params = []
@@ -115,18 +115,26 @@ class CariDB:
         cursor.execute(query, params)
         rows = cursor.fetchall()
         self.db.close()
-        return [dict(row) for row in rows]
+        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+        if self.db.is_mysql:
+            return list(rows)  # Zaten dictionary listesi
+        else:
+            return [dict(row) for row in rows]  # SQLite Row objesini dict'e çevir
     
     def cari_getir(self, cari_id: int) -> Optional[Dict]:
         """Belirli bir cari hesabı getir"""
         conn = self.db.connect()
-        cursor = conn.cursor()
+        cursor = self.db._get_cursor(conn)
         query = "SELECT * FROM cari WHERE id = ?"
         query = self.db._convert_placeholders(query)
         cursor.execute(query, (cari_id,))
         row = cursor.fetchone()
         self.db.close()
-        return dict(row) if row else None
+        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+        if self.db.is_mysql:
+            return row if row else None
+        else:
+            return dict(row) if row else None
     
     def cari_tc_ile_ara(self, tc_kimlik_no: str) -> Optional[Dict]:
         """TC kimlik no ile cari hesap ara"""
@@ -135,12 +143,16 @@ class CariDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             query = "SELECT * FROM cari WHERE tc_kimlik_no = ?"
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (tc_kimlik_no.strip(),))
             row = cursor.fetchone()
-            return dict(row) if row else None
+            # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+            if self.db.is_mysql:
+                return row if row else None
+            else:
+                return dict(row) if row else None
         finally:
             if conn:
                 try:
@@ -156,12 +168,16 @@ class CariDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             query = "SELECT * FROM cari WHERE unvan = ?"
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (unvan.strip(),))
             row = cursor.fetchone()
-            return dict(row) if row else None
+            # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+            if self.db.is_mysql:
+                return row if row else None
+            else:
+                return dict(row) if row else None
         finally:
             if conn:
                 try:
@@ -239,13 +255,17 @@ class CariDB:
             conn = None
             try:
                 conn = self.db.connect()
-                cursor = conn.cursor()
+                cursor = self.db._get_cursor(conn)
                 query = "SELECT * FROM cari WHERE vergi_no = ?"
                 query = self.db._convert_placeholders(query)
                 cursor.execute(query, (vergi_no.strip(),))
                 row = cursor.fetchone()
                 if row:
-                    mevcut_cari = dict(row)
+                    # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+                    if self.db.is_mysql:
+                        mevcut_cari = row
+                    else:
+                        mevcut_cari = dict(row)
                     return (True, f"Bu VKN'ye sahip cari hesap zaten mevcut: {mevcut_cari.get('unvan', '')}")
             finally:
                 if conn:
@@ -263,7 +283,7 @@ class CariDB:
                         conn = None
                         try:
                             conn = self.db.connect()
-                            cursor = conn.cursor()
+                            cursor = self.db._get_cursor(conn)
                             query = "UPDATE cari SET tc_kimlik_no = ? WHERE id = ?"
                             query = self.db._convert_placeholders(query)
                             cursor.execute(query, (tc_kimlik_no.strip(), mevcut_cari['id']))
@@ -293,7 +313,7 @@ class CariDB:
         conn = None
         try:
             conn = self.db.connect()
-            cursor = conn.cursor()
+            cursor = self.db._get_cursor(conn)
             query = "SELECT id FROM cari WHERE cari_kodu = ?"
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (cari_kodu,))
