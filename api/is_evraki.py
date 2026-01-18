@@ -3,11 +3,21 @@
 """
 from fastapi import APIRouter, HTTPException
 import json
-from models import IsEvrakiCreate, IsEvrakiCreateWithEmail
+from models import IsEvrakiCreate, IsEvrakiCreateWithEmail, IsEvrakiUpdate
 from api.pdf_email import pdf_olustur_api, email_gonder_api
 from db_instance import db
 
 router = APIRouter(prefix="/api/is-evraki", tags=["is-evraki"])
+
+
+@router.get("/sonraki-no")
+async def is_emri_no_sonraki():
+    """Get next available work order number"""
+    try:
+        no = db.is_emri_no_sonraki()
+        return {"success": True, "data": {"is_emri_no": no}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("")
@@ -16,6 +26,20 @@ async def is_evraki_listele():
     try:
         evraklar = db.is_evraki_listele()
         return {"success": True, "data": evraklar, "count": len(evraklar)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{evrak_id}")
+async def is_evraki_getir(evrak_id: int):
+    """Get a specific work order by ID"""
+    try:
+        evrak = db.is_evraki_getir(evrak_id)
+        if not evrak:
+            raise HTTPException(status_code=404, detail="İş evrakı bulunamadı")
+        return {"success": True, "data": evrak}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -150,11 +174,55 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/sonraki-no")
-async def is_emri_no_sonraki():
-    """Get next available work order number"""
+@router.get("/{evrak_id}")
+async def is_evraki_getir(evrak_id: int):
+    """Get a specific work order by ID"""
     try:
-        no = db.is_emri_no_sonraki()
-        return {"success": True, "data": {"is_emri_no": no}}
+        evrak = db.is_evraki_getir(evrak_id)
+        if not evrak:
+            raise HTTPException(status_code=404, detail="İş evrakı bulunamadı")
+        return {"success": True, "data": evrak}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{evrak_id}")
+async def is_evraki_guncelle(evrak_id: int, evrak: IsEvrakiUpdate):
+    """Update a work order"""
+    try:
+        if not evrak.musteri_unvan:
+            raise HTTPException(status_code=400, detail="Müşteri ünvanı zorunludur")
+        
+        basarili, mesaj = db.is_evraki_guncelle(
+            evrak_id, evrak.is_emri_no, evrak.tarih, evrak.musteri_unvan, evrak.telefon,
+            evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
+            evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
+            evrak.baslama_saati, evrak.bitis_saati, evrak.kullanilan_urunler,
+            evrak.toplam_tutar, evrak.tc_kimlik_no
+        )
+        
+        if basarili:
+            return {"success": True, "message": mesaj}
+        else:
+            raise HTTPException(status_code=400, detail=mesaj)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{evrak_id}")
+async def is_evraki_sil(evrak_id: int):
+    """Delete a work order"""
+    try:
+        basarili, mesaj = db.is_evraki_sil(evrak_id)
+        if basarili:
+            return {"success": True, "message": mesaj}
+        else:
+            raise HTTPException(status_code=404, detail=mesaj)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

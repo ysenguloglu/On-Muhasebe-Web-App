@@ -92,6 +92,15 @@ class Database:
     def is_evraki_listele(self, *args, **kwargs):
         return self.is_evraki.is_evraki_listele(*args, **kwargs)
     
+    def is_evraki_getir(self, *args, **kwargs):
+        return self.is_evraki.is_evraki_getir(*args, **kwargs)
+    
+    def is_evraki_guncelle(self, *args, **kwargs):
+        return self.is_evraki.is_evraki_guncelle(*args, **kwargs)
+    
+    def is_evraki_sil(self, *args, **kwargs):
+        return self.is_evraki.is_evraki_sil(*args, **kwargs)
+    
     def is_emri_no_sonraki(self, *args, **kwargs):
         return self.is_evraki.is_emri_no_sonraki(*args, **kwargs)
     

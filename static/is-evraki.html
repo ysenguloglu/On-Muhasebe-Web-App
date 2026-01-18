@@ -437,32 +437,52 @@
             };
             
             try {
-                // Önce kaydet ve gönder endpoint'ini dene
-                const response = await fetch(`${API_BASE}/api/is-evraki/kaydet-ve-gonder`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    let mesaj = result.message || 'İş evrakı başarıyla kaydedildi!';
-                    if (result.warning) {
-                        mesaj += '\n\nUyarı: ' + result.warning;
+                // Eğer düzenleme modundaysa güncelle
+                if (editingEvrakId) {
+                    const response = await fetch(`${API_BASE}/api/is-evraki/${editingEvrakId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('İş evrakı başarıyla güncellendi!');
+                        clearForm();
+                        loadEvraklar();
+                    } else {
+                        alert('Hata: ' + (result.detail || result.message));
                     }
-                    if (result.stok_mesajlari && result.stok_mesajlari.hatali.length > 0) {
-                        mesaj += '\n\nStok Uyarıları:\n' + result.stok_mesajlari.hatali.join('\n');
-                    }
-                    alert(mesaj);
-                    clearForm();
-                    loadEvraklar();
                 } else {
-                    alert('Hata: ' + (result.detail || result.message));
+                    // Yeni kayıt - kaydet ve gönder endpoint'ini dene
+                    const response = await fetch(`${API_BASE}/api/is-evraki/kaydet-ve-gonder`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        let mesaj = result.message || 'İş evrakı başarıyla kaydedildi!';
+                        if (result.warning) {
+                            mesaj += '\n\nUyarı: ' + result.warning;
+                        }
+                        if (result.stok_mesajlari && result.stok_mesajlari.hatali.length > 0) {
+                            mesaj += '\n\nStok Uyarıları:\n' + result.stok_mesajlari.hatali.join('\n');
+                        }
+                        alert(mesaj);
+                        clearForm();
+                        loadEvraklar();
+                    } else {
+                        alert('Hata: ' + (result.detail || result.message));
+                    }
                 }
             } catch (error) {
                 alert('Hata: ' + error.message);
             }
         });
+        
+        let editingEvrakId = null;
         
         async function loadEvraklar() {
             try {
@@ -481,7 +501,8 @@
                             <td>${item.arac_plakasi || '-'}</td>
                             <td>${(item.toplam_tutar || 0).toFixed(2)} ₺</td>
                             <td>
-                                <button onclick="viewEvrak(${item.id})">👁️</button>
+                                <button onclick="editEvrak(${item.id})" style="margin-right: 5px;">✏️ Düzenle</button>
+                                <button onclick="deleteEvrak(${item.id})" class="btn-danger" style="margin-right: 5px;">🗑️ Sil</button>
                             </td>
                         `;
                     });
@@ -491,14 +512,111 @@
             }
         }
         
-        function viewEvrak(id) {
-            alert('Detay görüntüleme özelliği yakında eklenecek!');
+        async function editEvrak(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/is-evraki/${id}`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const evrak = data.data;
+                    editingEvrakId = id;
+                    
+                    // Formu doldur
+                    document.getElementById('is_emri_no').value = evrak.is_emri_no;
+                    
+                    // Tarihi parse et ve doldur
+                    if (evrak.tarih) {
+                        const tarihParts = evrak.tarih.split('-');
+                        if (tarihParts.length === 3) {
+                            document.getElementById('tarih_gun').value = parseInt(tarihParts[0]);
+                            document.getElementById('tarih_ay').value = parseInt(tarihParts[1]);
+                            document.getElementById('tarih_yil').value = parseInt(tarihParts[2]);
+                        }
+                    }
+                    
+                    document.getElementById('musteri_unvan').value = evrak.musteri_unvan || '';
+                    document.getElementById('telefon').value = evrak.telefon || '';
+                    document.getElementById('arac_plakasi').value = evrak.arac_plakasi || '';
+                    document.getElementById('cekici_dorse').value = evrak.cekici_dorse || 'Çekici';
+                    document.getElementById('marka_model').value = evrak.marka_model || '';
+                    document.getElementById('musteri_sikayeti').value = evrak.musteri_sikayeti || '';
+                    document.getElementById('yapilan_is').value = evrak.yapilan_is || '';
+                    document.getElementById('baslama_saati').value = evrak.baslama_saati || '';
+                    document.getElementById('bitis_saati').value = evrak.bitis_saati || '';
+                    document.getElementById('tc_kimlik_no').value = evrak.tc_kimlik_no || '';
+                    
+                    // Talep edilen işleri checkbox'lara işaretle
+                    if (evrak.talep_edilen_isler) {
+                        const isler = evrak.talep_edilen_isler.split(',').map(i => i.trim());
+                        document.querySelectorAll('input[name="isler"]').forEach(cb => {
+                            cb.checked = isler.includes(cb.value);
+                        });
+                    }
+                    
+                    // Ürünleri yükle
+                    if (evrak.kullanilan_urunler) {
+                        try {
+                            urunler = JSON.parse(evrak.kullanilan_urunler);
+                            updateUrunListesi();
+                        } catch (e) {
+                            urunler = [];
+                            updateUrunListesi();
+                        }
+                    } else {
+                        urunler = [];
+                        updateUrunListesi();
+                    }
+                    
+                    // Form başlığını değiştir
+                    document.querySelector('h1').textContent = '📄 İş Evrakı Düzenle';
+                    
+                    // Submit butonunu değiştir
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    submitBtn.textContent = '💾 Değişiklikleri Kaydet';
+                    submitBtn.onclick = null; // Eski event listener'ı kaldır
+                    
+                    // Sayfayı yukarı kaydır
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    alert('İş evrakı yüklenemedi: ' + (data.detail || 'Bilinmeyen hata'));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        async function deleteEvrak(id) {
+            if (!confirm('Bu iş evrakını silmek istediğinizden emin misiniz?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/is-evraki/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('İş evrakı başarıyla silindi!');
+                    loadEvraklar();
+                } else {
+                    alert('Hata: ' + (data.detail || data.message));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
         }
         
         function clearForm() {
             document.getElementById('isEvrakiForm').reset();
             urunler = [];
             updateUrunListesi();
+            editingEvrakId = null;
+            
+            // Form başlığını ve butonu sıfırla
+            document.querySelector('h1').textContent = '📄 İş Evrakı Oluştur';
+            const submitBtn = document.querySelector('button[type="submit"]');
+            submitBtn.textContent = '💾 İş Evrakını Kaydet';
             
             // İş emri no ve tarihi tekrar doldur
             window.onload();
