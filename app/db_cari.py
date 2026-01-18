@@ -36,13 +36,12 @@ class CariDB:
             return True
         except Exception as e:
             if self.db._is_integrity_error(e):
-            if conn:
-                try:
-                    conn.rollback()
-                except:
-                    pass
-            return False
-        except Exception as e:
+                if conn:
+                    try:
+                        conn.rollback()
+                    except:
+                        pass
+                return False
             print(f"Cari ekleme hatası: {e}")
             if conn:
                 try:
@@ -77,7 +76,6 @@ class CariDB:
         except Exception as e:
             if self.db._is_integrity_error(e):
                 return False
-        except Exception as e:
             print(f"Cari güncelleme hatası: {e}")
             return False
     
