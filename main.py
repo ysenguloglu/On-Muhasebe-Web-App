@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import sys
 
 from db_instance import db
 from routes import router as routes_router
@@ -18,6 +19,19 @@ app = FastAPI(
     description="Stok, Cari Hesap ve İş Evrakı Yönetimi API",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Uygulama başlarken veritabanı tablolarını kontrol et"""
+    try:
+        print("🔄 Veritabanı tabloları kontrol ediliyor...")
+        db.db_conn.init_database()
+        print("✅ Veritabanı hazır!")
+    except Exception as e:
+        print(f"⚠️ Veritabanı başlatma hatası (uygulama devam ediyor): {e}")
+        import traceback
+        traceback.print_exc()
+        # Hata olsa bile uygulama başlasın, belki tablolar zaten var
 
 # CORS middleware
 app.add_middleware(

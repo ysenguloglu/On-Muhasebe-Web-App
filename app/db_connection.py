@@ -133,6 +133,7 @@ class DatabaseConnection:
     def init_database(self):
         """Veritabanı tablolarını oluştur"""
         conn = None
+        cursor = None
         try:
             conn = self.connect()
             cursor = conn.cursor()
@@ -299,11 +300,16 @@ class DatabaseConnection:
             try:
                 if conn:
                     conn.rollback()
-                    self.close()
             except:
                 pass
             # Hata olsa bile devam et, belki tablolar zaten var
+            # Ama exception'ı tekrar fırlat ki startup event'te yakalanabilsin
             raise
         finally:
-            if conn:
-                self.close()
+            # Connection'ı kapatma, çünkü sonraki işlemler için gerekli
+            # Sadece cursor'ı kapat
+            if cursor:
+                try:
+                    cursor.close()
+                except:
+                    pass

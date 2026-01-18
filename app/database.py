@@ -20,7 +20,18 @@ class Database:
             database_url: PostgreSQL connection string (PostgreSQL için)
         """
         self.db_conn = DatabaseConnection(db_path=db_path, database_url=database_url)
-        self.db_conn.init_database()
+        
+        # Veritabanı tablolarını oluştur
+        try:
+            print(f"🔄 Veritabanı başlatılıyor... (PostgreSQL: {self.db_conn.is_postgres})")
+            self.db_conn.init_database()
+            print("✅ Veritabanı tabloları hazır!")
+        except Exception as e:
+            print(f"❌ Veritabanı başlatma hatası: {e}")
+            import traceback
+            traceback.print_exc()
+            # Hata olsa bile devam et, belki tablolar zaten var
+            # Ama uygulama başlarken tekrar kontrol edilecek
         
         # Alt modülleri başlat
         self.stok = StokDB(self.db_conn)
