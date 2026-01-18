@@ -12,7 +12,8 @@ load_dotenv()
 database_url = os.getenv("DATABASE_URL")
 
 # Single database instance shared across all modules
-if database_url and database_url.startswith("postgresql://"):
+# Railway bazen postgres:// veya postgresql:// formatında URL verebilir
+if database_url and (database_url.startswith("postgresql://") or database_url.startswith("postgres://")):
     # PostgreSQL kullan
     db = Database(database_url=database_url)
 else:

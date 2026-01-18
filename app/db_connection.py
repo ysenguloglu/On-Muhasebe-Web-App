@@ -36,7 +36,11 @@ class DatabaseConnection:
         self.is_postgres = False
         
         # DATABASE_URL varsa PostgreSQL kullan
-        if self.database_url and self.database_url.startswith("postgresql://"):
+        # Railway bazen postgres:// veya postgresql:// formatında URL verebilir
+        if self.database_url and (self.database_url.startswith("postgresql://") or self.database_url.startswith("postgres://")):
+            # postgres:// formatını postgresql:// formatına çevir (psycopg2 için)
+            if self.database_url.startswith("postgres://"):
+                self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
             self.is_postgres = True
             if not PSYCOPG2_AVAILABLE:
                 raise ImportError("PostgreSQL kullanmak için psycopg2-binary paketi yüklü olmalı")
