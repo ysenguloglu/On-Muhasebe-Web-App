@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ön Muhasebe - Stok Yönetimi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .btn-success {
+            background: #27ae60;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        .btn-info {
+            background: #3498db;
+        }
+        .btn-info:hover {
+            background: #2980b9;
+        }
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .back-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .back-btn:hover {
+            background: #5568d3;
+        }
+        .excel-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+        .search-box {
+            margin-bottom: 20px;
+        }
+        .search-box input {
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">← Ana Sayfa</a>
+        <div class="header-actions">
+            <h1 style="margin: 0;">📦 Stok Yönetimi</h1>
+            <div class="excel-buttons">
+                <div class="file-input-wrapper">
+                    <button type="button" class="btn-info" onclick="document.getElementById('excelFileInput').click()">
+                        📊 Excel'den İçe Aktar
+                    </button>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display: none;" onchange="excelImport(event)">
+                </div>
+                <button type="button" class="btn-success" onclick="excelExport()">
+                    📥 Excel'e Dışa Aktar
+                </button>
+            </div>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" id="search" placeholder="Ürün ara..." onkeyup="loadStok()">
+        </div>
+        
+        <form id="stokForm">
+            <div class="form-group">
+                <label>Ürün Kodu</label>
+                <input type="text" id="urun_kodu">
+            </div>
+            <div class="form-group">
+                <label>Ürün Adı *</label>
+                <input type="text" id="urun_adi" required>
+            </div>
+            <div class="form-group">
+                <label>Marka</label>
+                <input type="text" id="marka">
+            </div>
+            <div class="form-group">
+                <label>Birim</label>
+                <select id="birim">
+                    <option>Adet</option>
+                    <option>Kg</option>
+                    <option>Litre</option>
+                    <option>Metre</option>
+                    <option>Paket</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Stok Miktarı</label>
+                <input type="number" id="stok_miktari" value="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Birim Fiyat (₺)</label>
+                <input type="number" id="birim_fiyat" value="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Açıklama</label>
+                <textarea id="aciklama" rows="3"></textarea>
+            </div>
+            <button type="submit">💾 Kaydet</button>
+            <button type="button" onclick="clearForm()">🔄 Temizle</button>
+        </form>
+        
+        <table id="stokTable">
+            <thead>
+                <tr>
+                    <th>Kod</th>
+                    <th>Ürün Adı</th>
+                    <th>Marka</th>
+                    <th>Birim</th>
+                    <th>Miktar</th>
+                    <th>Fiyat</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="stokTableBody">
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        const API_BASE = window.location.origin;
+        let selectedId = null;
+        
+        async function loadStok() {
+            const search = document.getElementById('search').value;
+            const url = `${API_BASE}/api/stok${search ? '?arama=' + encodeURIComponent(search) : ''}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const tbody = document.getElementById('stokTableBody');
+                tbody.innerHTML = '';
+                
+                if (data.success && data.data) {
+                    data.data.forEach(item => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${item.urun_kodu || '-'}</td>
+                            <td>${item.urun_adi}</td>
+                            <td>${item.marka || '-'}</td>
+                            <td>${item.birim || 'Adet'}</td>
+                            <td>${item.stok_miktari || 0}</td>
+                            <td>${(item.birim_fiyat || 0).toFixed(2)} ₺</td>
+                            <td>
+                                <button onclick="editStok(${item.id})">✏️</button>
+                                <button class="btn-danger" onclick="deleteStok(${item.id})">🗑️</button>
+                            </td>
+                        `;
+                    });
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        document.getElementById('stokForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                urun_kodu: document.getElementById('urun_kodu').value,
+                urun_adi: document.getElementById('urun_adi').value,
+                marka: document.getElementById('marka').value,
+                birim: document.getElementById('birim').value,
+                stok_miktari: parseFloat(document.getElementById('stok_miktari').value) || 0,
+                birim_fiyat: parseFloat(document.getElementById('birim_fiyat').value) || 0,
+                aciklama: document.getElementById('aciklama').value
+            };
+            
+            try {
+                let response;
+                if (selectedId) {
+                    response = await fetch(`${API_BASE}/api/stok/${selectedId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    response = await fetch(`${API_BASE}/api/stok`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('Başarılı!');
+                    clearForm();
+                    loadStok();
+                } else {
+                    alert('Hata: ' + (result.detail || result.message));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        });
+        
+        async function editStok(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/stok/${id}`);
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const item = result.data;
+                    document.getElementById('urun_kodu').value = item.urun_kodu || '';
+                    document.getElementById('urun_adi').value = item.urun_adi || '';
+                    document.getElementById('marka').value = item.marka || '';
+                    document.getElementById('birim').value = item.birim || 'Adet';
+                    document.getElementById('stok_miktari').value = item.stok_miktari || 0;
+                    document.getElementById('birim_fiyat').value = item.birim_fiyat || 0;
+                    document.getElementById('aciklama').value = item.aciklama || '';
+                    selectedId = id;
+                    window.scrollTo(0, 0);
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        async function deleteStok(id) {
+            if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/stok/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Silindi!');
+                    loadStok();
+                } else {
+                    alert('Hata: ' + (result.detail || result.message));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        function clearForm() {
+            document.getElementById('stokForm').reset();
+            selectedId = null;
+        }
+        
+        async function excelImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                alert('Lütfen geçerli bir Excel dosyası seçin (.xlsx veya .xls)');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/stok/excel-import`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let mesaj = `İçe aktarma tamamlandı!\n\nBaşarılı: ${result.basarili}\nHatalı: ${result.hatali}`;
+                    
+                    if (result.hata_mesajlari && result.hata_mesajlari.length > 0) {
+                        mesaj += '\n\nHata Detayları:\n' + result.hata_mesajlari.slice(0, 10).join('\n');
+                        if (result.hata_mesajlari.length > 10) {
+                            mesaj += `\n\n... ve ${result.hata_mesajlari.length - 10} hata daha`;
+                        }
+                    }
+                    
+                    if (result.hatali > 0) {
+                        alert(mesaj);
+                    } else {
+                        alert(mesaj);
+                    }
+                    
+                    // Dosya input'unu temizle
+                    document.getElementById('excelFileInput').value = '';
+                    
+                    // Stok listesini yenile
+                    loadStok();
+                } else {
+                    alert('Hata: ' + (result.detail || 'İçe aktarma başarısız'));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        async function excelExport() {
+            try {
+                const response = await fetch(`${API_BASE}/api/stok/excel-export`);
+                
+                // Önce status kontrolü yap
+                if (!response.ok) {
+                    // Hata durumunda response'u text olarak oku
+                    const errorText = await response.text();
+                    let errorMessage = 'Dışa aktarma başarısız';
+                    
+                    if (errorText) {
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMessage = errorData.detail || errorData.message || errorMessage;
+                        } catch (e) {
+                            errorMessage = errorText || response.statusText || `HTTP ${response.status}`;
+                        }
+                    } else {
+                        errorMessage = response.statusText || `HTTP ${response.status}`;
+                    }
+                    
+                    alert('Hata: ' + errorMessage);
+                    return;
+                }
+                
+                // Başarılı durumda blob olarak oku
+                const blob = await response.blob();
+                
+                if (!blob || blob.size === 0) {
+                    alert('Hata: Excel dosyası boş veya oluşturulamadı');
+                    return;
+                }
+                
+                // Dosya adını header'dan al
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = `stok_export_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`;
+                
+                if (contentDisposition) {
+                    const matches = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (matches && matches[1]) {
+                        filename = matches[1].replace(/['"]/g, '');
+                        try {
+                            filename = decodeURIComponent(filename);
+                        } catch (e) {
+                            // Decode edilemezse olduğu gibi kullan
+                        }
+                    }
+                }
+                
+                // Blob'u indir
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                alert('Excel dosyası başarıyla indirildi!');
+            } catch (error) {
+                // Hata yakalama - tüm durumları kapsar
+                let errorMessage = 'Bilinmeyen hata oluştu';
+                
+                try {
+                    if (error instanceof Error) {
+                        errorMessage = error.message || 'Hata oluştu';
+                    } else if (typeof error === 'string') {
+                        errorMessage = error;
+                    } else if (error && error.toString && error.toString() !== '[object Object]') {
+                        errorMessage = error.toString();
+                    } else if (error) {
+                        // Object ise JSON string'e çevir
+                        errorMessage = JSON.stringify(error, Object.getOwnPropertyNames(error));
+                    }
+                } catch (e) {
+                    errorMessage = 'Hata mesajı parse edilemedi';
+                }
+                
+                console.error('Excel export error:', error);
+                alert('Hata: ' + errorMessage);
+            }
+        }
+        
+        // Sayfa yüklendiğinde stokları getir
+        loadStok();
+    </script>
+</body>
+</html>

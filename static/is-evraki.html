@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ön Muhasebe - İş Evrakı</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            color: #667eea;
+        }
+        .back-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        textarea {
+            resize: vertical;
+        }
+        .date-inputs {
+            display: flex;
+            gap: 10px;
+        }
+        .date-inputs input {
+            flex: 1;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .btn-success {
+            background: #27ae60;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+        }
+        .urun-list {
+            margin-top: 20px;
+        }
+        .urun-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .urun-item-info {
+            flex: 1;
+        }
+        .urun-item-actions {
+            display: flex;
+            gap: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 İş Evrakı Oluştur</h1>
+            <a href="/" class="back-btn">← Ana Sayfa</a>
+        </div>
+        
+        <form id="isEvrakiForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>İş Emri No *</label>
+                    <input type="number" id="is_emri_no" required>
+                </div>
+                <div class="form-group">
+                    <label>Tarih *</label>
+                    <div class="date-inputs">
+                        <input type="number" id="tarih_gun" placeholder="Gün" min="1" max="31" required>
+                        <input type="number" id="tarih_ay" placeholder="Ay" min="1" max="12" required>
+                        <input type="number" id="tarih_yil" placeholder="Yıl" min="1900" max="2100" required>
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <label>Müşteri Ünvanı - Adı *</label>
+                    <input type="text" id="musteri_unvan" required>
+                </div>
+                <div class="form-group">
+                    <label>TC Kimlik No / VKN</label>
+                    <input type="text" id="tc_kimlik_no">
+                </div>
+                <div class="form-group">
+                    <label>Firma Tipi</label>
+                    <select id="firma_tipi">
+                        <option>Şahıs</option>
+                        <option>Tüzel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="text" id="telefon">
+                </div>
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="musteri_email">
+                </div>
+                <div class="form-group full-width">
+                    <label>Adres</label>
+                    <textarea id="musteri_adres" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Vergi Dairesi</label>
+                    <input type="text" id="vergi_dairesi">
+                </div>
+                <div class="form-group">
+                    <label>Araç Plakası</label>
+                    <input type="text" id="arac_plakasi">
+                </div>
+                <div class="form-group">
+                    <label>Çekici / Dorse *</label>
+                    <select id="cekici_dorse" required>
+                        <option>Çekici</option>
+                        <option>Dorse</option>
+                        <option>Çekici ve Dorse</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Marka / Model</label>
+                    <input type="text" id="marka_model">
+                </div>
+                <div class="form-group full-width">
+                    <label>Talep Edilen İşler *</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="isler" value="Fren"> Fren</label>
+                        <label><input type="checkbox" name="isler" value="Vize Hazırlık"> Vize Hazırlık</label>
+                        <label><input type="checkbox" name="isler" value="Kaliper Revizyonu"> Kaliper Revizyonu</label>
+                        <label><input type="checkbox" name="isler" value="Beyin Tamiri"> Beyin Tamiri</label>
+                        <label><input type="checkbox" name="isler" value="Kampana Tornası"> Kampana Tornası</label>
+                        <label><input type="checkbox" name="isler" value="Diğer"> Diğer</label>
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <label>Müşteri Şikayeti</label>
+                    <textarea id="musteri_sikayeti" rows="3"></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label>Yapılan İş Açıklaması</label>
+                    <textarea id="yapilan_is" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>İşe Başlama Saati</label>
+                    <input type="text" id="baslama_saati" placeholder="Örn: 09:00">
+                </div>
+                <div class="form-group">
+                    <label>İş Bitiş Saati</label>
+                    <input type="text" id="bitis_saati" placeholder="Örn: 17:00">
+                </div>
+            </div>
+            
+            <div class="form-group full-width">
+                <h3 style="margin-bottom: 15px; color: #667eea;">Kullanılan Ürünler</h3>
+                <button type="button" onclick="showUrunEkleModal()">➕ Ürün Ekle</button>
+                <div id="urunListesi" class="urun-list"></div>
+            </div>
+            
+            <button type="submit" class="btn-success">💾 İş Evrakını Kaydet</button>
+            <button type="button" onclick="clearForm()">🔄 Formu Temizle</button>
+        </form>
+        
+        <h2 style="margin-top: 40px; color: #667eea;">Kayıtlı İş Evrakları</h2>
+        <table id="evrakTable">
+            <thead>
+                <tr>
+                    <th>İş Emri No</th>
+                    <th>Tarih</th>
+                    <th>Müşteri</th>
+                    <th>Araç Plakası</th>
+                    <th>Toplam Tutar</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="evrakTableBody">
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Ürün Ekleme Modal -->
+    <div id="urunModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;">
+            <h3 style="margin-bottom: 20px;">Ürün Ekle</h3>
+            <div class="form-group">
+                <label>Ürün Kodu</label>
+                <input type="text" id="modal_urun_kodu">
+            </div>
+            <div class="form-group">
+                <label>Ürün Adı *</label>
+                <input type="text" id="modal_urun_adi" required>
+            </div>
+            <div class="form-group">
+                <label>Adet *</label>
+                <input type="number" id="modal_adet" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+                <label>Birim Fiyat (₺) *</label>
+                <input type="number" id="modal_fiyat" step="0.01" min="0" required>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="addUrun()" style="flex: 1;">💾 Ekle</button>
+                <button onclick="closeUrunModal()" style="flex: 1; background: #95a5a6;">❌ İptal</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = window.location.origin;
+        let urunler = [];
+        
+        // Sayfa yüklendiğinde iş emri no'yu al
+        window.onload = async function() {
+            try {
+                const response = await fetch(`${API_BASE}/api/is-evraki/sonraki-no`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('is_emri_no').value = data.data.is_emri_no;
+                }
+            } catch (error) {
+                console.error('İş emri no alınamadı:', error);
+            }
+            
+            // Bugünün tarihini doldur
+            const today = new Date();
+            document.getElementById('tarih_gun').value = today.getDate();
+            document.getElementById('tarih_ay').value = today.getMonth() + 1;
+            document.getElementById('tarih_yil').value = today.getFullYear();
+            
+            loadEvraklar();
+        };
+        
+        function showUrunEkleModal() {
+            document.getElementById('urunModal').style.display = 'block';
+        }
+        
+        function closeUrunModal() {
+            document.getElementById('urunModal').style.display = 'none';
+            document.getElementById('modal_urun_kodu').value = '';
+            document.getElementById('modal_urun_adi').value = '';
+            document.getElementById('modal_adet').value = '';
+            document.getElementById('modal_fiyat').value = '';
+        }
+        
+        function addUrun() {
+            const urun_kodu = document.getElementById('modal_urun_kodu').value;
+            const urun_adi = document.getElementById('modal_urun_adi').value;
+            const adet = parseFloat(document.getElementById('modal_adet').value);
+            const fiyat = parseFloat(document.getElementById('modal_fiyat').value);
+            
+            if (!urun_adi || !adet || adet <= 0 || fiyat < 0) {
+                alert('Lütfen tüm alanları doğru şekilde doldurun!');
+                return;
+            }
+            
+            urunler.push({
+                urun_kodu: urun_kodu,
+                urun_adi: urun_adi,
+                adet: adet,
+                birim_fiyat: fiyat,
+                toplam: adet * fiyat
+            });
+            
+            updateUrunListesi();
+            closeUrunModal();
+        }
+        
+        function removeUrun(index) {
+            urunler.splice(index, 1);
+            updateUrunListesi();
+        }
+        
+        function updateUrunListesi() {
+            const container = document.getElementById('urunListesi');
+            container.innerHTML = '';
+            
+            if (urunler.length === 0) {
+                container.innerHTML = '<p style="color: #999; padding: 20px; text-align: center;">Henüz ürün eklenmedi.</p>';
+                return;
+            }
+            
+            let toplamTutar = 0;
+            urunler.forEach((urun, index) => {
+                toplamTutar += urun.toplam;
+                const div = document.createElement('div');
+                div.className = 'urun-item';
+                div.innerHTML = `
+                    <div class="urun-item-info">
+                        <strong>${urun.urun_adi}</strong> (${urun.urun_kodu || '-'})<br>
+                        <small>Adet: ${urun.adet} × ${urun.birim_fiyat.toFixed(2)} ₺ = ${urun.toplam.toFixed(2)} ₺</small>
+                    </div>
+                    <div class="urun-item-actions">
+                        <button class="btn-danger" onclick="removeUrun(${index})">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            const toplamDiv = document.createElement('div');
+            toplamDiv.style.cssText = 'margin-top: 15px; padding: 15px; background: #e8f5e9; border-radius: 5px; text-align: right; font-size: 18px; font-weight: bold; color: #2e7d32;';
+            toplamDiv.innerHTML = `TOPLAM: ${toplamTutar.toFixed(2)} ₺`;
+            container.appendChild(toplamDiv);
+        }
+        
+        document.getElementById('isEvrakiForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Seçilen işleri al
+            const secilenIsler = Array.from(document.querySelectorAll('input[name="isler"]:checked')).map(cb => cb.value);
+            if (secilenIsler.length === 0) {
+                alert('En az bir iş seçmelisiniz!');
+                return;
+            }
+            
+            const tarih = `${document.getElementById('tarih_gun').value}-${document.getElementById('tarih_ay').value}-${document.getElementById('tarih_yil').value}`;
+            const toplamTutar = urunler.reduce((sum, u) => sum + u.toplam, 0);
+            
+            const data = {
+                is_emri_no: parseInt(document.getElementById('is_emri_no').value),
+                tarih: tarih,
+                musteri_unvan: document.getElementById('musteri_unvan').value,
+                telefon: document.getElementById('telefon').value,
+                arac_plakasi: document.getElementById('arac_plakasi').value,
+                cekici_dorse: document.getElementById('cekici_dorse').value,
+                marka_model: document.getElementById('marka_model').value,
+                talep_edilen_isler: secilenIsler.join(', '),
+                musteri_sikayeti: document.getElementById('musteri_sikayeti').value,
+                yapilan_is: document.getElementById('yapilan_is').value,
+                baslama_saati: document.getElementById('baslama_saati').value,
+                bitis_saati: document.getElementById('bitis_saati').value,
+                kullanilan_urunler: JSON.stringify(urunler),
+                toplam_tutar: toplamTutar,
+                tc_kimlik_no: document.getElementById('tc_kimlik_no').value,
+                musteri_email: document.getElementById('musteri_email').value,
+                musteri_adres: document.getElementById('musteri_adres').value,
+                vergi_dairesi: document.getElementById('vergi_dairesi').value,
+                firma_tipi: document.getElementById('firma_tipi').value,
+                send_email: true
+            };
+            
+            try {
+                // Önce kaydet ve gönder endpoint'ini dene
+                const response = await fetch(`${API_BASE}/api/is-evraki/kaydet-ve-gonder`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    let mesaj = result.message || 'İş evrakı başarıyla kaydedildi!';
+                    if (result.warning) {
+                        mesaj += '\n\nUyarı: ' + result.warning;
+                    }
+                    if (result.stok_mesajlari && result.stok_mesajlari.hatali.length > 0) {
+                        mesaj += '\n\nStok Uyarıları:\n' + result.stok_mesajlari.hatali.join('\n');
+                    }
+                    alert(mesaj);
+                    clearForm();
+                    loadEvraklar();
+                } else {
+                    alert('Hata: ' + (result.detail || result.message));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        });
+        
+        async function loadEvraklar() {
+            try {
+                const response = await fetch(`${API_BASE}/api/is-evraki`);
+                const data = await response.json();
+                const tbody = document.getElementById('evrakTableBody');
+                tbody.innerHTML = '';
+                
+                if (data.success && data.data) {
+                    data.data.forEach(item => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${item.is_emri_no}</td>
+                            <td>${item.tarih}</td>
+                            <td>${item.musteri_unvan}</td>
+                            <td>${item.arac_plakasi || '-'}</td>
+                            <td>${(item.toplam_tutar || 0).toFixed(2)} ₺</td>
+                            <td>
+                                <button onclick="viewEvrak(${item.id})">👁️</button>
+                            </td>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+            }
+        }
+        
+        function viewEvrak(id) {
+            alert('Detay görüntüleme özelliği yakında eklenecek!');
+        }
+        
+        function clearForm() {
+            document.getElementById('isEvrakiForm').reset();
+            urunler = [];
+            updateUrunListesi();
+            
+            // İş emri no ve tarihi tekrar doldur
+            window.onload();
+        }
+    </script>
+</body>
+</html>

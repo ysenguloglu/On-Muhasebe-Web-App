@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ön Muhasebe - Cari Hesap Yönetimi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            color: #667eea;
+        }
+        .back-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        textarea {
+            resize: vertical;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .search-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-filter input, .search-filter select {
+            flex: 1;
+            min-width: 200px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow-x: auto;
+            display: block;
+        }
+        thead, tbody {
+            display: block;
+        }
+        thead {
+            background: #667eea;
+            color: white;
+        }
+        tr {
+            display: grid;
+            grid-template-columns: 80px 200px 100px 120px 180px 120px 100px 100px 80px 100px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bakiye-positive {
+            color: green;
+            font-weight: bold;
+        }
+        .bakiye-negative {
+            color: red;
+            font-weight: bold;
+        }
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            tr {
+                grid-template-columns: 1fr;
+                display: block;
+            }
+            th, td {
+                display: block;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👥 Cari Hesap Yönetimi</h1>
+            <a href="/" class="back-btn">← Ana Sayfa</a>
+        </div>
+        
+        <div class="search-filter">
+            <input type="text" id="search" placeholder="Cari kodu veya ünvan ara..." onkeyup="loadCari()">
+            <select id="tipFilter" onchange="loadCari()">
+                <option value="">Tümü</option>
+                <option value="Müşteri">Müşteri</option>
+                <option value="Tedarikçi">Tedarikçi</option>
+            </select>
+        </div>
+        
+        <form id="cariForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Cari Kodu</label>
+                    <input type="text" id="cari_kodu">
+                </div>
+                <div class="form-group">
+                    <label>Ünvan / Firma Adı *</label>
+                    <input type="text" id="unvan" required>
+                </div>
+                <div class="form-group">
+                    <label>Tip</label>
+                    <select id="tip">
+                        <option>Müşteri</option>
+                        <option>Tedarikçi</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Firma Tipi</label>
+                    <select id="firma_tipi">
+                        <option>Şahıs</option>
+                        <option>Tüzel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="text" id="telefon">
+                </div>
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="email">
+                </div>
+                <div class="form-group">
+                    <label>TC Kimlik No / VKN</label>
+                    <input type="text" id="tc_kimlik_no">
+                </div>
+                <div class="form-group">
+                    <label>Vergi No</label>
+                    <input type="text" id="vergi_no">
+                </div>
+                <div class="form-group">
+                    <label>Vergi Dairesi</label>
+                    <input type="text" id="vergi_dairesi">
+                </div>
+                <div class="form-group">
+                    <label>Bakiye (₺)</label>
+                    <input type="number" id="bakiye" value="0" step="0.01">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Adres</label>
+                <textarea id="adres" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Açıklama</label>
+                <textarea id="aciklama" rows="3"></textarea>
+            </div>
+            <button type="submit">💾 Kaydet</button>
+            <button type="button" onclick="clearForm()">🔄 Temizle</button>
+        </form>
+        
+        <table id="cariTable">
+            <thead>
+                <tr>
+                    <th>Kod</th>
+                    <th>Ünvan</th>
+                    <th>Tip</th>
+                    <th>Telefon</th>
+                    <th>E-posta</th>
+                    <th>Vergi No</th>
+                    <th>Firma Tipi</th>
+                    <th>Bakiye</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="cariTableBody">
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        const API_BASE = window.location.origin;
+        let selectedId = null;
+        
+        async function loadCari() {
+            const search = document.getElementById('search').value;
+            const tip = document.getElementById('tipFilter').value;
+            let url = `${API_BASE}/api/cari?`;
+            if (search) url += `arama=${encodeURIComponent(search)}&`;
+            if (tip) url += `tip=${encodeURIComponent(tip)}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const tbody = document.getElementById('cariTableBody');
+                tbody.innerHTML = '';
+                
+                if (data.success && data.data) {
+                    data.data.forEach(item => {
+                        const row = document.createElement('tr');
+                        const bakiye = item.bakiye || 0;
+                        const bakiyeClass = bakiye >= 0 ? 'bakiye-positive' : 'bakiye-negative';
+                        row.innerHTML = `
+                            <td>${item.cari_kodu || '-'}</td>
+                            <td>${item.unvan}</td>
+                            <td>${item.tip}</td>
+                            <td>${item.telefon || '-'}</td>
+                            <td>${item.email || '-'}</td>
+                            <td>${item.vergi_no || '-'}</td>
+                            <td>${item.firma_tipi || 'Şahıs'}</td>
+                            <td class="${bakiyeClass}">${bakiye.toFixed(2)} ₺</td>
+                            <td>
+                                <button onclick="editCari(${item.id})">✏️</button>
+                                <button class="btn-danger" onclick="deleteCari(${item.id})">🗑️</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        document.getElementById('cariForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                cari_kodu: document.getElementById('cari_kodu').value,
+                unvan: document.getElementById('unvan').value,
+                tip: document.getElementById('tip').value,
+                telefon: document.getElementById('telefon').value,
+                email: document.getElementById('email').value,
+                adres: document.getElementById('adres').value,
+                tc_kimlik_no: document.getElementById('tc_kimlik_no').value,
+                vergi_no: document.getElementById('vergi_no').value,
+                vergi_dairesi: document.getElementById('vergi_dairesi').value,
+                bakiye: parseFloat(document.getElementById('bakiye').value) || 0,
+                aciklama: document.getElementById('aciklama').value,
+                firma_tipi: document.getElementById('firma_tipi').value
+            };
+            
+            try {
+                let response;
+                if (selectedId) {
+                    response = await fetch(`${API_BASE}/api/cari/${selectedId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    response = await fetch(`${API_BASE}/api/cari`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('Başarılı!');
+                    clearForm();
+                    loadCari();
+                } else {
+                    alert('Hata: ' + (result.detail || result.message));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        });
+        
+        async function editCari(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/cari/${id}`);
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const item = result.data;
+                    document.getElementById('cari_kodu').value = item.cari_kodu || '';
+                    document.getElementById('unvan').value = item.unvan || '';
+                    document.getElementById('tip').value = item.tip || 'Müşteri';
+                    document.getElementById('firma_tipi').value = item.firma_tipi || 'Şahıs';
+                    document.getElementById('telefon').value = item.telefon || '';
+                    document.getElementById('email').value = item.email || '';
+                    document.getElementById('adres').value = item.adres || '';
+                    document.getElementById('tc_kimlik_no').value = item.tc_kimlik_no || '';
+                    document.getElementById('vergi_no').value = item.vergi_no || '';
+                    document.getElementById('vergi_dairesi').value = item.vergi_dairesi || '';
+                    document.getElementById('bakiye').value = item.bakiye || 0;
+                    document.getElementById('aciklama').value = item.aciklama || '';
+                    selectedId = id;
+                    window.scrollTo(0, 0);
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        async function deleteCari(id) {
+            if (!confirm('Bu cari hesabı silmek istediğinize emin misiniz?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/cari/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Silindi!');
+                    loadCari();
+                } else {
+                    alert('Hata: ' + (result.detail || result.message));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        function clearForm() {
+            document.getElementById('cariForm').reset();
+            document.getElementById('tip').value = 'Müşteri';
+            document.getElementById('firma_tipi').value = 'Şahıs';
+            document.getElementById('bakiye').value = 0;
+            selectedId = null;
+        }
+        
+        loadCari();
+    </script>
+</body>
+</html>

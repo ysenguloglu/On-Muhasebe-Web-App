@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: on-muhasebe-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      # PDF API Key - html2pdf.app API key'inizi buraya ekleyin
+      - key: PDF_API_KEY
+        sync: false
+      # SMTP Ayarları
+      - key: SMTP_SERVER
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      # SMTP Kullanıcı Bilgileri - Render.com dashboard'dan ekleyin
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      # E-posta Adresleri - Render.com dashboard'dan ekleyin
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_TO
+        sync: false
