@@ -21,6 +21,7 @@ python-dotenv>=1.0.0
 
 # MySQL Database
 pymysql>=1.1.0
+cryptography>=41.0.0
 
 # Not: PDF oluşturma için html2pdf.app API kullanılmaktadır (harici servis)
 # Not: E-posta gönderme için smtplib (Python standart kütüphanesi) kullanılmaktadır
