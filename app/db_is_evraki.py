@@ -1,7 +1,6 @@
 """
 İş evrakı veritabanı işlemleri
 """
-import sqlite3
 from typing import List, Dict
 from .db_connection import DatabaseConnection
 
@@ -37,18 +36,20 @@ class IsEvrakiDB:
             kullanilan_urunler_val = kullanilan_urunler if kullanilan_urunler else None
             tc_kimlik_no_val = tc_kimlik_no.strip() if tc_kimlik_no and tc_kimlik_no.strip() else None
             
-            cursor.execute("""
+            query = """
                 INSERT INTO is_evraki (is_emri_no, tarih, musteri_unvan, telefon, arac_plakasi,
                                      cekici_dorse, marka_model, talep_edilen_isler, musteri_sikayeti,
                                      yapilan_is, baslama_saati, bitis_saati, kullanilan_urunler,
                                      toplam_tutar, tc_kimlik_no)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (is_emri_no, tarih, musteri_unvan, telefon_val, arac_plakasi_val, cekici_dorse_val,
+            """
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (is_emri_no, tarih, musteri_unvan, telefon_val, arac_plakasi_val, cekici_dorse_val,
                   marka_model_val, talep_edilen_isler_val, musteri_sikayeti_val, yapilan_is_val,
                   baslama_saati_val, bitis_saati_val, kullanilan_urunler_val, toplam_tutar, tc_kimlik_no_val))
             conn.commit()
             return (True, "İş evrakı başarıyla kaydedildi")
-        except sqlite3.OperationalError as e:
+        except Exception as e:
             hata_mesaji = f"Veritabanı hatası: {str(e)}"
             print(f"İş evrakı ekleme hatası: {e}")
             if conn:
@@ -82,7 +83,9 @@ class IsEvrakiDB:
         """ID ile iş evrakı getir"""
         conn = self.db.connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM is_evraki WHERE id = ?", (evrak_id,))
+        query = "SELECT * FROM is_evraki WHERE id = ?"
+        query = self.db._convert_placeholders(query)
+        cursor.execute(query, (evrak_id,))
         row = cursor.fetchone()
         self.db.close()
         return dict(row) if row else None
@@ -112,14 +115,16 @@ class IsEvrakiDB:
             kullanilan_urunler_val = kullanilan_urunler if kullanilan_urunler else None
             tc_kimlik_no_val = tc_kimlik_no.strip() if tc_kimlik_no and tc_kimlik_no.strip() else None
             
-            cursor.execute("""
+            query = """
                 UPDATE is_evraki 
                 SET is_emri_no = ?, tarih = ?, musteri_unvan = ?, telefon = ?, arac_plakasi = ?,
                     cekici_dorse = ?, marka_model = ?, talep_edilen_isler = ?, musteri_sikayeti = ?,
                     yapilan_is = ?, baslama_saati = ?, bitis_saati = ?, kullanilan_urunler = ?,
                     toplam_tutar = ?, tc_kimlik_no = ?
                 WHERE id = ?
-            """, (is_emri_no, tarih, musteri_unvan, telefon_val, arac_plakasi_val, cekici_dorse_val,
+            """
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (is_emri_no, tarih, musteri_unvan, telefon_val, arac_plakasi_val, cekici_dorse_val,
                   marka_model_val, talep_edilen_isler_val, musteri_sikayeti_val, yapilan_is_val,
                   baslama_saati_val, bitis_saati_val, kullanilan_urunler_val, toplam_tutar, tc_kimlik_no_val, evrak_id))
             conn.commit()
@@ -146,7 +151,9 @@ class IsEvrakiDB:
         try:
             conn = self.db.connect()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM is_evraki WHERE id = ?", (evrak_id,))
+            query = "DELETE FROM is_evraki WHERE id = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (evrak_id,))
             conn.commit()
             
             if cursor.rowcount == 0:

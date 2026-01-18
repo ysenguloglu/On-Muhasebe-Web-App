@@ -115,8 +115,13 @@ class DatabaseConnection:
         """Integrity error kontrolü - Her iki veritabanı için"""
         if self.is_postgres:
             # PostgreSQL için psycopg2.errors.UniqueViolation veya IntegrityError
-            from psycopg2 import errors
-            return isinstance(exception, (errors.UniqueViolation, errors.IntegrityError))
+            try:
+                import psycopg2
+                import psycopg2.errors
+                return isinstance(exception, (psycopg2.errors.UniqueViolation, psycopg2.IntegrityError, psycopg2.errors.IntegrityError))
+            except:
+                # Eğer psycopg2 import edilemezse, exception tipine bak
+                return 'unique' in str(exception).lower() or 'integrity' in str(exception).lower()
         else:
             # SQLite için
             return isinstance(exception, sqlite3.IntegrityError)

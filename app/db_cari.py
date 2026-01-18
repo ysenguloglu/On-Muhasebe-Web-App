@@ -1,7 +1,6 @@
 """
 Cari hesap veritabanı işlemleri
 """
-import sqlite3
 from typing import Optional, List, Dict
 from .db_connection import DatabaseConnection
 
@@ -25,15 +24,18 @@ class CariDB:
             tc_kimlik_no_val = tc_kimlik_no.strip() if tc_kimlik_no and tc_kimlik_no.strip() else None
             vergi_no_val = vergi_no.strip() if vergi_no and vergi_no.strip() else None
             bakiye_val = float(bakiye) if bakiye is not None else 0.0
-            cursor.execute("""
+            query = """
                 INSERT INTO cari (cari_kodu, unvan, tip, telefon, email, adres,
                                 tc_kimlik_no, vergi_no, vergi_dairesi, bakiye, aciklama, firma_tipi)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (cari_kodu_val, unvan, tip, telefon, email, adres, 
+            """
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (cari_kodu_val, unvan, tip, telefon, email, adres, 
                   tc_kimlik_no_val, vergi_no_val, vergi_dairesi, bakiye_val, aciklama, firma_tipi))
             conn.commit()
             return True
-        except sqlite3.IntegrityError:
+        except Exception as e:
+            if self.db._is_integrity_error(e):
             if conn:
                 try:
                     conn.rollback()
@@ -59,19 +61,22 @@ class CariDB:
             conn = self.db.connect()
             cursor = conn.cursor()
             cari_kodu_val = cari_kodu if cari_kodu else None
-            cursor.execute("""
+            query = """
                 UPDATE cari 
                 SET cari_kodu = ?, unvan = ?, tip = ?, telefon = ?, email = ?,
                     adres = ?, vergi_no = ?, vergi_dairesi = ?, bakiye = ?,
                     aciklama = ?, firma_tipi = ?, guncelleme_tarihi = CURRENT_TIMESTAMP
                 WHERE id = ?
-            """, (cari_kodu_val, unvan, tip, telefon, email, adres, vergi_no,
+            """
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (cari_kodu_val, unvan, tip, telefon, email, adres, vergi_no,
                   vergi_dairesi, bakiye, aciklama, firma_tipi, cari_id))
             conn.commit()
             self.db.close()
             return True
-        except sqlite3.IntegrityError:
-            return False
+        except Exception as e:
+            if self.db._is_integrity_error(e):
+                return False
         except Exception as e:
             print(f"Cari güncelleme hatası: {e}")
             return False
@@ -81,7 +86,9 @@ class CariDB:
         try:
             conn = self.db.connect()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM cari WHERE id = ?", (cari_id,))
+            query = "DELETE FROM cari WHERE id = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (cari_id,))
             conn.commit()
             self.db.close()
             return True
@@ -106,7 +113,7 @@ class CariDB:
             params.append(tip)
         
         query += " ORDER BY unvan"
-        
+        query = self.db._convert_placeholders(query)
         cursor.execute(query, params)
         rows = cursor.fetchall()
         self.db.close()
@@ -116,7 +123,9 @@ class CariDB:
         """Belirli bir cari hesabı getir"""
         conn = self.db.connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM cari WHERE id = ?", (cari_id,))
+        query = "SELECT * FROM cari WHERE id = ?"
+        query = self.db._convert_placeholders(query)
+        cursor.execute(query, (cari_id,))
         row = cursor.fetchone()
         self.db.close()
         return dict(row) if row else None
@@ -129,7 +138,9 @@ class CariDB:
         try:
             conn = self.db.connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM cari WHERE tc_kimlik_no = ?", (tc_kimlik_no.strip(),))
+            query = "SELECT * FROM cari WHERE tc_kimlik_no = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (tc_kimlik_no.strip(),))
             row = cursor.fetchone()
             return dict(row) if row else None
         finally:
@@ -148,7 +159,9 @@ class CariDB:
         try:
             conn = self.db.connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM cari WHERE unvan = ?", (unvan.strip(),))
+            query = "SELECT * FROM cari WHERE unvan = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (unvan.strip(),))
             row = cursor.fetchone()
             return dict(row) if row else None
         finally:
@@ -165,13 +178,25 @@ class CariDB:
         try:
             conn = self.db.connect()
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT cari_kodu FROM cari 
-                WHERE cari_kodu IS NOT NULL 
-                AND cari_kodu GLOB '[0-9]*'
-                ORDER BY CAST(cari_kodu AS INTEGER) DESC
-                LIMIT 1
-            """)
+            if self.db.is_postgres:
+                # PostgreSQL için ~ (regex) operatörü kullan
+                query = """
+                    SELECT cari_kodu FROM cari 
+                    WHERE cari_kodu IS NOT NULL 
+                    AND cari_kodu ~ '^[0-9]+$'
+                    ORDER BY CAST(cari_kodu AS INTEGER) DESC
+                    LIMIT 1
+                """
+            else:
+                # SQLite için GLOB kullan
+                query = """
+                    SELECT cari_kodu FROM cari 
+                    WHERE cari_kodu IS NOT NULL 
+                    AND cari_kodu GLOB '[0-9]*'
+                    ORDER BY CAST(cari_kodu AS INTEGER) DESC
+                    LIMIT 1
+                """
+            cursor.execute(query)
             row = cursor.fetchone()
             if row and row[0]:
                 try:
@@ -206,7 +231,9 @@ class CariDB:
             try:
                 conn = self.db.connect()
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM cari WHERE vergi_no = ?", (vergi_no.strip(),))
+                query = "SELECT * FROM cari WHERE vergi_no = ?"
+                query = self.db._convert_placeholders(query)
+                cursor.execute(query, (vergi_no.strip(),))
                 row = cursor.fetchone()
                 if row:
                     mevcut_cari = dict(row)
@@ -228,8 +255,9 @@ class CariDB:
                         try:
                             conn = self.db.connect()
                             cursor = conn.cursor()
-                            cursor.execute("UPDATE cari SET tc_kimlik_no = ? WHERE id = ?", 
-                                         (tc_kimlik_no.strip(), mevcut_cari['id']))
+                            query = "UPDATE cari SET tc_kimlik_no = ? WHERE id = ?"
+                            query = self.db._convert_placeholders(query)
+                            cursor.execute(query, (tc_kimlik_no.strip(), mevcut_cari['id']))
                             conn.commit()
                         except Exception as e:
                             print(f"TC güncelleme hatası: {e}")
@@ -257,14 +285,20 @@ class CariDB:
         try:
             conn = self.db.connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM cari WHERE cari_kodu = ?", (cari_kodu,))
+            query = "SELECT id FROM cari WHERE cari_kodu = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (cari_kodu,))
             if cursor.fetchone():
                 cari_kodu = self.cari_sonraki_kod_olustur()
-                cursor.execute("SELECT id FROM cari WHERE cari_kodu = ?", (cari_kodu,))
+                query = "SELECT id FROM cari WHERE cari_kodu = ?"
+                query = self.db._convert_placeholders(query)
+                cursor.execute(query, (cari_kodu,))
                 sayac = 0
                 while cursor.fetchone() and sayac < 100:
                     cari_kodu = str(int(cari_kodu) + 1)
-                    cursor.execute("SELECT id FROM cari WHERE cari_kodu = ?", (cari_kodu,))
+                    query = "SELECT id FROM cari WHERE cari_kodu = ?"
+                    query = self.db._convert_placeholders(query)
+                    cursor.execute(query, (cari_kodu,))
                     sayac += 1
         finally:
             if conn:
