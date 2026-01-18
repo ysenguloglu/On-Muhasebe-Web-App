@@ -59,6 +59,11 @@ class DatabaseConnection:
         if self.is_postgres:
             # PostgreSQL bağlantısı
             self.conn = psycopg2.connect(self.database_url)
+            # PostgreSQL için search_path'i public olarak ayarla
+            cursor = self.conn.cursor()
+            cursor.execute("SET search_path TO public;")
+            self.conn.commit()
+            cursor.close()
             return self.conn
         else:
             # SQLite bağlantısı
@@ -139,10 +144,13 @@ class DatabaseConnection:
             cursor = conn.cursor()
             
             if self.is_postgres:
-                # PostgreSQL için SQL syntax
+                # PostgreSQL için schema'yı ayarla (varsayılan: public)
+                cursor.execute("SET search_path TO public;")
+                
+                # PostgreSQL için SQL syntax - Schema'yı açıkça belirt
                 # Stok tablosu
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS stok (
+                    CREATE TABLE IF NOT EXISTS public.stok (
                         id SERIAL PRIMARY KEY,
                         urun_kodu VARCHAR(255) UNIQUE,
                         urun_adi VARCHAR(255) NOT NULL,
@@ -158,7 +166,7 @@ class DatabaseConnection:
                 
                 # Cari hesap tablosu
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS cari (
+                    CREATE TABLE IF NOT EXISTS public.cari (
                         id SERIAL PRIMARY KEY,
                         cari_kodu VARCHAR(255) UNIQUE,
                         unvan VARCHAR(255) NOT NULL,
@@ -179,7 +187,7 @@ class DatabaseConnection:
                 
                 # İş evrakı tablosu
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS is_evraki (
+                    CREATE TABLE IF NOT EXISTS public.is_evraki (
                         id SERIAL PRIMARY KEY,
                         is_emri_no INTEGER NOT NULL,
                         tarih VARCHAR(50) NOT NULL,
@@ -202,10 +210,21 @@ class DatabaseConnection:
                 
                 # PostgreSQL için migration (firma_tipi kolonu)
                 try:
-                    cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")
-                    cursor.execute("UPDATE cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
+                    cursor.execute("ALTER TABLE public.cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")
+                    cursor.execute("UPDATE public.cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
                 except Exception:
                     pass  # Kolon zaten varsa hata vermez
+                
+                # Tabloların oluşturulduğunu doğrula
+                cursor.execute("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name IN ('stok', 'cari', 'is_evraki')
+                """)
+                tables = cursor.fetchall()
+                table_names = [row['table_name'] if isinstance(row, dict) else row[0] for row in tables]
+                print(f"📊 Oluşturulan tablolar: {', '.join(table_names) if table_names else 'HİÇBİR TABLO BULUNAMADI!'}")
             else:
                 # SQLite için SQL syntax
                 # Stok tablosu
