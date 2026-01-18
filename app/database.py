@@ -9,7 +9,7 @@ from .db_is_evraki import IsEvrakiDB
 
 
 class Database:
-    """Veritabanı yönetim sınıfı - SQLite ve PostgreSQL desteği - Tüm modülleri birleştirir"""
+    """Veritabanı yönetim sınıfı - SQLite ve MySQL desteği - Tüm modülleri birleştirir"""
     
     def __init__(self, db_path: str = "on_muhasebe.db", database_url: str = None):
         """
@@ -17,13 +17,13 @@ class Database:
         
         Args:
             db_path: SQLite veritabanı dosya yolu (SQLite için)
-            database_url: PostgreSQL connection string (PostgreSQL için)
+            database_url: MySQL connection string (MySQL için)
         """
         self.db_conn = DatabaseConnection(db_path=db_path, database_url=database_url)
         
         # Veritabanı tablolarını oluştur
         try:
-            print(f"🔄 Veritabanı başlatılıyor... (PostgreSQL: {self.db_conn.is_postgres})")
+            print(f"🔄 Veritabanı başlatılıyor... (MySQL: {self.db_conn.is_mysql})")
             self.db_conn.init_database()
             print("✅ Veritabanı tabloları hazır!")
         except Exception as e:

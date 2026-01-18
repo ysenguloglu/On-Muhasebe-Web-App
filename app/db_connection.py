@@ -1,26 +1,26 @@
 """
 Veritabanı bağlantı yönetimi
-SQLite ve PostgreSQL veritabanı bağlantı işlemleri
+SQLite ve MySQL veritabanı bağlantı işlemleri
 """
 import os
 import sqlite3
 from typing import Optional
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()
 
-# PostgreSQL için psycopg2 import (opsiyonel)
+# MySQL için pymysql import (opsiyonel)
 try:
-    import psycopg2
-    from psycopg2.extras import RealDictCursor
-    from psycopg2 import pool
-    PSYCOPG2_AVAILABLE = True
+    import pymysql
+    from pymysql.cursors import DictCursor
+    PYMySQL_AVAILABLE = True
 except ImportError:
-    PSYCOPG2_AVAILABLE = False
+    PYMySQL_AVAILABLE = False
 
 
 class DatabaseConnection:
-    """Veritabanı bağlantı yönetim sınıfı - SQLite ve PostgreSQL desteği"""
+    """Veritabanı bağlantı yönetim sınıfı - SQLite ve MySQL desteği"""
     
     def __init__(self, db_path: Optional[str] = None, database_url: Optional[str] = None):
         """
@@ -28,22 +28,35 @@ class DatabaseConnection:
         
         Args:
             db_path: SQLite veritabanı dosya yolu (SQLite için)
-            database_url: PostgreSQL connection string (PostgreSQL için)
+            database_url: MySQL connection string (MySQL için)
         """
         self.database_url = database_url or os.getenv("DATABASE_URL")
         self.db_path = db_path or "on_muhasebe.db"
         self.conn = None
-        self.is_postgres = False
+        self.is_mysql = False
         
-        # DATABASE_URL varsa PostgreSQL kullan
-        # Railway bazen postgres:// veya postgresql:// formatında URL verebilir
-        if self.database_url and (self.database_url.startswith("postgresql://") or self.database_url.startswith("postgres://")):
-            # postgres:// formatını postgresql:// formatına çevir (psycopg2 için)
-            if self.database_url.startswith("postgres://"):
-                self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
-            self.is_postgres = True
-            if not PSYCOPG2_AVAILABLE:
-                raise ImportError("PostgreSQL kullanmak için psycopg2-binary paketi yüklü olmalı")
+        # DATABASE_URL varsa MySQL kullan
+        # MySQL URL formatı: mysql://user:password@host:port/database
+        if self.database_url and (self.database_url.startswith("mysql://") or self.database_url.startswith("mysql+pymysql://")):
+            self.is_mysql = True
+            if not PYMySQL_AVAILABLE:
+                raise ImportError("MySQL kullanmak için pymysql paketi yüklü olmalı")
+    
+    def _parse_mysql_url(self, url: str) -> dict:
+        """MySQL URL'ini parse et"""
+        # mysql:// veya mysql+pymysql:// formatını destekle
+        if url.startswith("mysql+pymysql://"):
+            url = url.replace("mysql+pymysql://", "mysql://", 1)
+        
+        parsed = urlparse(url)
+        return {
+            'host': parsed.hostname or 'localhost',
+            'port': parsed.port or 3306,
+            'user': parsed.username or 'root',
+            'password': parsed.password or '',
+            'database': parsed.path.lstrip('/') if parsed.path else None,
+            'charset': 'utf8mb4'
+        }
     
     def connect(self):
         """Veritabanı bağlantısı oluştur - Thread-safe"""
@@ -56,14 +69,10 @@ class DatabaseConnection:
             finally:
                 self.conn = None
         
-        if self.is_postgres:
-            # PostgreSQL bağlantısı
-            self.conn = psycopg2.connect(self.database_url)
-            # PostgreSQL için search_path'i public olarak ayarla
-            cursor = self.conn.cursor()
-            cursor.execute("SET search_path TO public;")
-            self.conn.commit()
-            cursor.close()
+        if self.is_mysql:
+            # MySQL bağlantısı
+            config = self._parse_mysql_url(self.database_url)
+            self.conn = pymysql.connect(**config)
             return self.conn
         else:
             # SQLite bağlantısı
@@ -92,17 +101,17 @@ class DatabaseConnection:
                 self.conn = None
     
     def _get_cursor(self):
-        """Cursor oluştur - PostgreSQL için RealDictCursor, SQLite için normal cursor"""
+        """Cursor oluştur - MySQL için DictCursor, SQLite için normal cursor"""
         conn = self.connect()
-        if self.is_postgres:
-            return conn.cursor(cursor_factory=RealDictCursor)
+        if self.is_mysql:
+            return conn.cursor(DictCursor)
         else:
             return conn.cursor()
     
     def _convert_placeholders(self, query: str) -> str:
-        """Placeholder'ları veritabanı tipine göre dönüştür (? -> %s PostgreSQL için)"""
-        if self.is_postgres:
-            # PostgreSQL için ? -> %s
+        """Placeholder'ları veritabanı tipine göre dönüştür (? -> %s MySQL için)"""
+        if self.is_mysql:
+            # MySQL için ? -> %s
             return query.replace('?', '%s')
         return query  # SQLite için ? olduğu gibi kalır
     
@@ -122,15 +131,14 @@ class DatabaseConnection:
     
     def _is_integrity_error(self, exception: Exception) -> bool:
         """Integrity error kontrolü - Her iki veritabanı için"""
-        if self.is_postgres:
-            # PostgreSQL için psycopg2.errors.UniqueViolation veya IntegrityError
+        if self.is_mysql:
+            # MySQL için pymysql.err.IntegrityError
             try:
-                import psycopg2
-                import psycopg2.errors
-                return isinstance(exception, (psycopg2.errors.UniqueViolation, psycopg2.IntegrityError, psycopg2.errors.IntegrityError))
+                import pymysql.err
+                return isinstance(exception, (pymysql.err.IntegrityError, pymysql.err.OperationalError))
             except:
-                # Eğer psycopg2 import edilemezse, exception tipine bak
-                return 'unique' in str(exception).lower() or 'integrity' in str(exception).lower()
+                # Eğer pymysql.err import edilemezse, exception tipine bak
+                return 'duplicate' in str(exception).lower() or 'integrity' in str(exception).lower() or 'unique' in str(exception).lower()
         else:
             # SQLite için
             return isinstance(exception, sqlite3.IntegrityError)
@@ -143,28 +151,24 @@ class DatabaseConnection:
             conn = self.connect()
             cursor = conn.cursor()
             
-            if self.is_postgres:
-                # PostgreSQL için schema'yı ayarla (varsayılan: public)
-                cursor.execute("SET search_path TO public;")
-                conn.commit()
-                
-                # PostgreSQL için SQL syntax - Schema'yı açıkça belirt
+            if self.is_mysql:
+                # MySQL için SQL syntax - SQLite'daki gibi TEXT kullan
                 # Her tablo için ayrı transaction kullan
                 try:
                     # Stok tablosu
                     cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS public.stok (
-                            id SERIAL PRIMARY KEY,
+                        CREATE TABLE IF NOT EXISTS stok (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
                             urun_kodu VARCHAR(255) UNIQUE,
                             urun_adi VARCHAR(255) NOT NULL,
                             marka VARCHAR(255),
                             birim VARCHAR(50) DEFAULT 'Adet',
-                            stok_miktari NUMERIC(10, 2) DEFAULT 0,
-                            birim_fiyat NUMERIC(10, 2) DEFAULT 0,
+                            stok_miktari DECIMAL(10, 2) DEFAULT 0,
+                            birim_fiyat DECIMAL(10, 2) DEFAULT 0,
                             aciklama TEXT,
                             olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
+                            guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """)
                     conn.commit()
                 except Exception as e:
@@ -174,8 +178,8 @@ class DatabaseConnection:
                 try:
                     # Cari hesap tablosu
                     cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS public.cari (
-                            id SERIAL PRIMARY KEY,
+                        CREATE TABLE IF NOT EXISTS cari (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
                             cari_kodu VARCHAR(255) UNIQUE,
                             unvan VARCHAR(255) NOT NULL,
                             tip VARCHAR(50) NOT NULL CHECK(tip IN ('Müşteri', 'Tedarikçi')),
@@ -185,12 +189,12 @@ class DatabaseConnection:
                             tc_kimlik_no VARCHAR(11) UNIQUE,
                             vergi_no VARCHAR(50),
                             vergi_dairesi VARCHAR(255),
-                            bakiye NUMERIC(10, 2) DEFAULT 0,
+                            bakiye DECIMAL(10, 2) DEFAULT 0,
                             aciklama TEXT,
                             firma_tipi VARCHAR(50) DEFAULT 'Şahıs',
                             olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
+                            guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """)
                     conn.commit()
                 except Exception as e:
@@ -200,9 +204,9 @@ class DatabaseConnection:
                 try:
                     # İş evrakı tablosu
                     cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS public.is_evraki (
-                            id SERIAL PRIMARY KEY,
-                            is_emri_no INTEGER NOT NULL,
+                        CREATE TABLE IF NOT EXISTS is_evraki (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            is_emri_no INT NOT NULL,
                             tarih VARCHAR(50) NOT NULL,
                             musteri_unvan VARCHAR(255) NOT NULL,
                             telefon VARCHAR(50),
@@ -215,20 +219,20 @@ class DatabaseConnection:
                             baslama_saati VARCHAR(10),
                             bitis_saati VARCHAR(10),
                             kullanilan_urunler TEXT,
-                            toplam_tutar NUMERIC(10, 2) DEFAULT 0,
+                            toplam_tutar DECIMAL(10, 2) DEFAULT 0,
                             tc_kimlik_no VARCHAR(11),
                             olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """)
                     conn.commit()
                 except Exception as e:
                     conn.rollback()
                     print(f"⚠️ İş evrakı tablosu oluşturma hatası (devam ediliyor): {e}")
                 
-                # PostgreSQL için migration (firma_tipi kolonu)
+                # MySQL için migration (firma_tipi kolonu)
                 try:
-                    cursor.execute("ALTER TABLE public.cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")
-                    cursor.execute("UPDATE public.cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
+                    cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")
+                    cursor.execute("UPDATE cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
                     conn.commit()
                 except Exception:
                     conn.rollback()
@@ -239,7 +243,7 @@ class DatabaseConnection:
                     cursor.execute("""
                         SELECT table_name 
                         FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
+                        WHERE table_schema = DATABASE()
                         AND table_name IN ('stok', 'cari', 'is_evraki')
                     """)
                     tables = cursor.fetchall()

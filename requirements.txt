@@ -19,9 +19,9 @@ google-api-python-client>=2.100.0
 # Environment Variables
 python-dotenv>=1.0.0
 
-# PostgreSQL Database
-psycopg2-binary>=2.9.9
+# MySQL Database
+pymysql>=1.1.0
 
 # Not: PDF oluşturma için html2pdf.app API kullanılmaktadır (harici servis)
 # Not: E-posta gönderme için smtplib (Python standart kütüphanesi) kullanılmaktadır
-# Not: Veritabanı için sqlite3 (Python standart kütüphanesi) veya PostgreSQL (psycopg2) kullanılmaktadır
+# Not: Veritabanı için sqlite3 (Python standart kütüphanesi) veya MySQL (pymysql) kullanılmaktadır

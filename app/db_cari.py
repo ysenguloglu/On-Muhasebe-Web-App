@@ -175,20 +175,16 @@ class CariDB:
         conn = None
         try:
             conn = self.db.connect()
-            # PostgreSQL için RealDictCursor, SQLite için normal cursor
-            if self.db.is_postgres:
-                from psycopg2.extras import RealDictCursor
-                cursor = conn.cursor(cursor_factory=RealDictCursor)
-            else:
-                cursor = conn.cursor()
+            cursor = self.db._get_cursor()
             
-            if self.db.is_postgres:
-                # PostgreSQL için ~ (regex) operatörü kullan
+            # MySQL ve SQLite için regex/pattern matching
+            if self.db.is_mysql:
+                # MySQL için REGEXP kullan
                 query = """
                     SELECT cari_kodu FROM cari 
                     WHERE cari_kodu IS NOT NULL 
-                    AND cari_kodu ~ '^[0-9]+$'
-                    ORDER BY CAST(cari_kodu AS INTEGER) DESC
+                    AND cari_kodu REGEXP '^[0-9]+$'
+                    ORDER BY CAST(cari_kodu AS UNSIGNED) DESC
                     LIMIT 1
                 """
             else:
@@ -203,11 +199,12 @@ class CariDB:
             cursor.execute(query)
             row = cursor.fetchone()
             
-            # PostgreSQL ve SQLite için farklı erişim
+            # MySQL ve SQLite için farklı erişim
             if row:
-                if self.db.is_postgres:
+                if self.db.is_mysql:
                     cari_kodu = row['cari_kodu']
                 else:
+                    # SQLite: Normal cursor, index erişimi
                     cari_kodu = row[0]
                 
                 if cari_kodu:

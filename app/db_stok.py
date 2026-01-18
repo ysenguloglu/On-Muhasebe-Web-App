@@ -78,7 +78,7 @@ class StokDB:
     def stok_listele(self, arama: str = "") -> List[Dict]:
         """Tüm ürünleri listele"""
         conn = self.db.connect()
-        cursor = conn.cursor()
+        cursor = self.db._get_cursor()
         
         if arama:
             query = """
@@ -89,11 +89,16 @@ class StokDB:
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (f"%{arama}%", f"%{arama}%", f"%{arama}%"))
         else:
-            cursor.execute("SELECT * FROM stok ORDER BY urun_adi")
+            query = "SELECT * FROM stok ORDER BY urun_adi"
+            cursor.execute(query)
         
         rows = cursor.fetchall()
         self.db.close()
-        return [dict(row) for row in rows]
+        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
+        if self.db.is_mysql:
+            return list(rows)  # Zaten dictionary listesi
+        else:
+            return [dict(row) for row in rows]  # SQLite Row objesini dict'e çevir
     
     def stok_getir(self, stok_id: int) -> Optional[Dict]:
         """Belirli bir ürünü getir"""
