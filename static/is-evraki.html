@@ -255,7 +255,8 @@
                 <div id="urunListesi" class="urun-list"></div>
             </div>
             
-            <button type="submit" class="btn-success">💾 İş Evrakını Kaydet</button>
+            <button type="submit" class="btn-success" id="submitBtn">💾 İş Evrakını Kaydet</button>
+            <button type="button" onclick="saveAndSendEmail()" class="btn-success" id="saveAndSendBtn" style="display: none;">💾📧 Kaydet ve Mail Gönder</button>
             <button type="button" onclick="clearForm()">🔄 Formu Temizle</button>
         </form>
         
@@ -502,6 +503,7 @@
                             <td>${(item.toplam_tutar || 0).toFixed(2)} ₺</td>
                             <td>
                                 <button onclick="editEvrak(${item.id})" style="margin-right: 5px;">✏️ Düzenle</button>
+                                <button onclick="sendEvrak(${item.id})" class="btn-success" style="margin-right: 5px; background: #27ae60;">📧 Gönder</button>
                                 <button onclick="deleteEvrak(${item.id})" class="btn-danger" style="margin-right: 5px;">🗑️ Sil</button>
                             </td>
                         `;
@@ -545,6 +547,25 @@
                     document.getElementById('bitis_saati').value = evrak.bitis_saati || '';
                     document.getElementById('tc_kimlik_no').value = evrak.tc_kimlik_no || '';
                     
+                    // Cari hesaptan email ve adres bilgilerini al
+                    if (evrak.musteri_unvan) {
+                        try {
+                            const cariResponse = await fetch(`${API_BASE}/api/cari?arama=${encodeURIComponent(evrak.musteri_unvan)}`);
+                            const cariData = await cariResponse.json();
+                            if (cariData.success && cariData.data && cariData.data.length > 0) {
+                                const cari = cariData.data.find(c => c.unvan === evrak.musteri_unvan) || cariData.data[0];
+                                document.getElementById('musteri_email').value = cari.email || '';
+                                document.getElementById('musteri_adres').value = cari.adres || '';
+                                document.getElementById('vergi_dairesi').value = cari.vergi_dairesi || '';
+                                if (cari.firma_tipi) {
+                                    document.getElementById('firma_tipi').value = cari.firma_tipi;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Cari bilgileri alınamadı:', e);
+                        }
+                    }
+                    
                     // Talep edilen işleri checkbox'lara işaretle
                     if (evrak.talep_edilen_isler) {
                         const isler = evrak.talep_edilen_isler.split(',').map(i => i.trim());
@@ -571,9 +592,13 @@
                     document.querySelector('h1').textContent = '📄 İş Evrakı Düzenle';
                     
                     // Submit butonunu değiştir
-                    const submitBtn = document.querySelector('button[type="submit"]');
+                    const submitBtn = document.getElementById('submitBtn');
                     submitBtn.textContent = '💾 Değişiklikleri Kaydet';
                     submitBtn.onclick = null; // Eski event listener'ı kaldır
+                    
+                    // "Kaydet ve Mail Gönder" butonunu göster
+                    const saveAndSendBtn = document.getElementById('saveAndSendBtn');
+                    saveAndSendBtn.style.display = 'inline-block';
                     
                     // Sayfayı yukarı kaydır
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -615,11 +640,99 @@
             
             // Form başlığını ve butonu sıfırla
             document.querySelector('h1').textContent = '📄 İş Evrakı Oluştur';
-            const submitBtn = document.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('submitBtn');
             submitBtn.textContent = '💾 İş Evrakını Kaydet';
+            
+            // "Kaydet ve Mail Gönder" butonunu gizle
+            const saveAndSendBtn = document.getElementById('saveAndSendBtn');
+            saveAndSendBtn.style.display = 'none';
             
             // İş emri no ve tarihi tekrar doldur
             window.onload();
+        }
+        
+        async function saveAndSendEmail() {
+            // Form validasyonu
+            const secilenIsler = Array.from(document.querySelectorAll('input[name="isler"]:checked')).map(cb => cb.value);
+            if (secilenIsler.length === 0) {
+                alert('En az bir iş seçmelisiniz!');
+                return;
+            }
+            
+            if (!editingEvrakId) {
+                alert('Düzenleme modunda değilsiniz!');
+                return;
+            }
+            
+            const tarih = `${document.getElementById('tarih_gun').value}-${document.getElementById('tarih_ay').value}-${document.getElementById('tarih_yil').value}`;
+            const toplamTutar = urunler.reduce((sum, u) => sum + u.toplam, 0);
+            
+            const data = {
+                is_emri_no: parseInt(document.getElementById('is_emri_no').value),
+                tarih: tarih,
+                musteri_unvan: document.getElementById('musteri_unvan').value,
+                telefon: document.getElementById('telefon').value,
+                arac_plakasi: document.getElementById('arac_plakasi').value,
+                cekici_dorse: document.getElementById('cekici_dorse').value,
+                marka_model: document.getElementById('marka_model').value,
+                talep_edilen_isler: secilenIsler.join(', '),
+                musteri_sikayeti: document.getElementById('musteri_sikayeti').value,
+                yapilan_is: document.getElementById('yapilan_is').value,
+                baslama_saati: document.getElementById('baslama_saati').value,
+                bitis_saati: document.getElementById('bitis_saati').value,
+                kullanilan_urunler: JSON.stringify(urunler),
+                toplam_tutar: toplamTutar,
+                tc_kimlik_no: document.getElementById('tc_kimlik_no').value,
+                musteri_email: document.getElementById('musteri_email').value,
+                musteri_adres: document.getElementById('musteri_adres').value,
+                vergi_dairesi: document.getElementById('vergi_dairesi').value,
+                firma_tipi: document.getElementById('firma_tipi').value,
+                send_email: true
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/is-evraki/guncelle-ve-gonder/${editingEvrakId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    let mesaj = result.message || 'İş evrakı başarıyla güncellendi!';
+                    if (result.warning) {
+                        mesaj += '\n\nUyarı: ' + result.warning;
+                    }
+                    alert(mesaj);
+                    clearForm();
+                    loadEvraklar();
+                } else {
+                    alert('Hata: ' + (result.detail || result.message));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        async function sendEvrak(id) {
+            if (!confirm('Bu iş evrakını e-posta ile göndermek istediğinizden emin misiniz?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/is-evraki/gonder/${id}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('E-posta başarıyla gönderildi!');
+                } else {
+                    alert('Hata: ' + (data.detail || data.message));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
         }
     </script>
 </body>

@@ -120,3 +120,26 @@ class IsEvrakiUpdate(BaseModel):
     kullanilan_urunler: Optional[str] = ""
     toplam_tutar: Optional[float] = 0
     tc_kimlik_no: Optional[str] = ""
+
+
+class IsEvrakiUpdateWithEmail(BaseModel):
+    is_emri_no: int
+    tarih: str
+    musteri_unvan: str
+    telefon: Optional[str] = ""
+    arac_plakasi: Optional[str] = ""
+    cekici_dorse: Optional[str] = ""
+    marka_model: Optional[str] = ""
+    talep_edilen_isler: Optional[str] = ""
+    musteri_sikayeti: Optional[str] = ""
+    yapilan_is: Optional[str] = ""
+    baslama_saati: Optional[str] = ""
+    bitis_saati: Optional[str] = ""
+    kullanilan_urunler: Optional[str] = ""
+    toplam_tutar: Optional[float] = 0
+    tc_kimlik_no: Optional[str] = ""
+    musteri_email: Optional[str] = ""
+    musteri_adres: Optional[str] = ""
+    vergi_dairesi: Optional[str] = ""
+    firma_tipi: Optional[str] = "Şahıs"
+    send_email: Optional[bool] = True

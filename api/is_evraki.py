@@ -3,7 +3,7 @@
 """
 from fastapi import APIRouter, HTTPException
 import json
-from models import IsEvrakiCreate, IsEvrakiCreateWithEmail, IsEvrakiUpdate
+from models import IsEvrakiCreate, IsEvrakiCreateWithEmail, IsEvrakiUpdate, IsEvrakiUpdateWithEmail
 from api.pdf_email import pdf_olustur_api, email_gonder_api
 from db_instance import db
 
@@ -207,6 +207,184 @@ async def is_evraki_guncelle(evrak_id: int, evrak: IsEvrakiUpdate):
             return {"success": True, "message": mesaj}
         else:
             raise HTTPException(status_code=400, detail=mesaj)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/guncelle-ve-gonder/{evrak_id}")
+async def is_evraki_guncelle_ve_gonder(evrak_id: int, evrak: IsEvrakiUpdateWithEmail):
+    """İş evrakını güncelle, PDF oluştur ve e-posta gönder"""
+    import os
+    
+    try:
+        if not evrak.musteri_unvan:
+            raise HTTPException(status_code=400, detail="Müşteri ünvanı zorunludur")
+        
+        # Kullanılan ürünleri parse et
+        urunler = []
+        if evrak.kullanilan_urunler:
+            try:
+                urunler = json.loads(evrak.kullanilan_urunler)
+            except:
+                pass
+        
+        # İş evrakını veritabanında güncelle
+        basarili, hata_mesaji = db.is_evraki_guncelle(
+            evrak_id, evrak.is_emri_no, evrak.tarih, evrak.musteri_unvan, evrak.telefon,
+            evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
+            evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
+            evrak.baslama_saati, evrak.bitis_saati, evrak.kullanilan_urunler,
+            evrak.toplam_tutar, evrak.tc_kimlik_no
+        )
+        
+        if not basarili:
+            raise HTTPException(status_code=400, detail=f"İş evrakı güncellenemedi: {hata_mesaji}")
+        
+        # PDF oluştur ve e-posta gönder
+        pdf_path = None
+        email_sent = False
+        
+        if evrak.send_email:
+            try:
+                # IsEvrakiCreateWithEmail formatına çevir
+                evrak_with_email = IsEvrakiCreateWithEmail(
+                    is_emri_no=evrak.is_emri_no,
+                    tarih=evrak.tarih,
+                    musteri_unvan=evrak.musteri_unvan,
+                    telefon=evrak.telefon,
+                    arac_plakasi=evrak.arac_plakasi,
+                    cekici_dorse=evrak.cekici_dorse,
+                    marka_model=evrak.marka_model,
+                    talep_edilen_isler=evrak.talep_edilen_isler,
+                    musteri_sikayeti=evrak.musteri_sikayeti,
+                    yapilan_is=evrak.yapilan_is,
+                    baslama_saati=evrak.baslama_saati,
+                    bitis_saati=evrak.bitis_saati,
+                    kullanilan_urunler=evrak.kullanilan_urunler,
+                    toplam_tutar=evrak.toplam_tutar,
+                    tc_kimlik_no=evrak.tc_kimlik_no,
+                    musteri_email=evrak.musteri_email,
+                    musteri_adres=evrak.musteri_adres,
+                    vergi_dairesi=evrak.vergi_dairesi,
+                    firma_tipi=evrak.firma_tipi,
+                    send_email=evrak.send_email
+                )
+                
+                pdf_path = await pdf_olustur_api(evrak_with_email, urunler)
+                if pdf_path:
+                    email_sent = await email_gonder_api(evrak_with_email, pdf_path)
+                    # PDF dosyasını temizle (geçici dosya)
+                    try:
+                        if os.path.exists(pdf_path):
+                            os.remove(pdf_path)
+                    except:
+                        pass
+            except Exception as e:
+                # PDF/Email hatası olsa bile güncelleme başarılı
+                return {
+                    "success": True,
+                    "message": "İş evrakı güncellendi ancak PDF/e-posta gönderiminde hata oluştu",
+                    "warning": str(e),
+                    "email_sent": False
+                }
+        
+        return {
+            "success": True,
+            "message": "İş evrakı başarıyla güncellendi" + (" ve e-posta gönderildi" if email_sent else ""),
+            "email_sent": email_sent
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/gonder/{evrak_id}")
+async def is_evraki_gonder(evrak_id: int):
+    """Kayıtlı iş evrakını e-posta ile gönder"""
+    import os
+    
+    try:
+        # İş evrakını veritabanından getir
+        evrak = db.is_evraki_getir(evrak_id)
+        if not evrak:
+            raise HTTPException(status_code=404, detail="İş evrakı bulunamadı")
+        
+        # Kullanılan ürünleri parse et
+        urunler = []
+        if evrak.get('kullanilan_urunler'):
+            try:
+                urunler = json.loads(evrak['kullanilan_urunler'])
+            except:
+                pass
+        
+        # Cari hesaptan müşteri bilgilerini al
+        musteri_email = ""
+        musteri_adres = ""
+        vergi_dairesi = ""
+        firma_tipi = "Şahıs"
+        
+        if evrak.get('musteri_unvan'):
+            cari = db.cari_unvan_ile_ara(evrak['musteri_unvan'])
+            if cari:
+                musteri_email = cari.get('email', '')
+                musteri_adres = cari.get('adres', '')
+                vergi_dairesi = cari.get('vergi_dairesi', '')
+                firma_tipi = cari.get('firma_tipi', 'Şahıs')
+        
+        # IsEvrakiCreateWithEmail formatına çevir
+        evrak_with_email = IsEvrakiCreateWithEmail(
+            is_emri_no=evrak.get('is_emri_no', 0),
+            tarih=evrak.get('tarih', ''),
+            musteri_unvan=evrak.get('musteri_unvan', ''),
+            telefon=evrak.get('telefon', ''),
+            arac_plakasi=evrak.get('arac_plakasi', ''),
+            cekici_dorse=evrak.get('cekici_dorse', ''),
+            marka_model=evrak.get('marka_model', ''),
+            talep_edilen_isler=evrak.get('talep_edilen_isler', ''),
+            musteri_sikayeti=evrak.get('musteri_sikayeti', ''),
+            yapilan_is=evrak.get('yapilan_is', ''),
+            baslama_saati=evrak.get('baslama_saati', ''),
+            bitis_saati=evrak.get('bitis_saati', ''),
+            kullanilan_urunler=evrak.get('kullanilan_urunler', ''),
+            toplam_tutar=evrak.get('toplam_tutar', 0),
+            tc_kimlik_no=evrak.get('tc_kimlik_no', ''),
+            musteri_email=musteri_email,
+            musteri_adres=musteri_adres,
+            vergi_dairesi=vergi_dairesi,
+            firma_tipi=firma_tipi,
+            send_email=True
+        )
+        
+        # PDF oluştur ve e-posta gönder
+        pdf_path = None
+        email_sent = False
+        
+        try:
+            pdf_path = await pdf_olustur_api(evrak_with_email, urunler)
+            if pdf_path:
+                email_sent = await email_gonder_api(evrak_with_email, pdf_path)
+                # PDF dosyasını temizle (geçici dosya)
+                try:
+                    if os.path.exists(pdf_path):
+                        os.remove(pdf_path)
+                except:
+                    pass
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"PDF/e-posta gönderiminde hata: {str(e)}")
+        
+        if email_sent:
+            return {
+                "success": True,
+                "message": "E-posta başarıyla gönderildi",
+                "email_sent": True
+            }
+        else:
+            raise HTTPException(status_code=500, detail="E-posta gönderilemedi")
+        
     except HTTPException:
         raise
     except Exception as e:
