@@ -220,17 +220,16 @@
                     <label>Marka / Model</label>
                     <input type="text" id="marka_model">
                 </div>
-                <div class="form-group">
+                <div class="form-group full-width">
                     <label>Talep Edilen İşler *</label>
-                    <select id="talep_edilen_isler" required>
-                        <option value="">Seçiniz...</option>
-                        <option value="Fren">Fren</option>
-                        <option value="Vize Hazırlık">Vize Hazırlık</option>
-                        <option value="Kaliper Revizyonu">Kaliper Revizyonu</option>
-                        <option value="Beyin Tamiri">Beyin Tamiri</option>
-                        <option value="Kampana Tornası">Kampana Tornası</option>
-                        <option value="Diğer">Diğer</option>
-                    </select>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="isler" value="Fren"> Fren</label>
+                        <label><input type="checkbox" name="isler" value="Vize Hazırlık"> Vize Hazırlık</label>
+                        <label><input type="checkbox" name="isler" value="Kaliper Revizyonu"> Kaliper Revizyonu</label>
+                        <label><input type="checkbox" name="isler" value="Beyin Tamiri"> Beyin Tamiri</label>
+                        <label><input type="checkbox" name="isler" value="Kampana Tornası"> Kampana Tornası</label>
+                        <label><input type="checkbox" name="isler" value="Diğer"> Diğer</label>
+                    </div>
                 </div>
                 <div class="form-group full-width">
                     <label>Müşteri Şikayeti</label>
@@ -405,10 +404,10 @@
         document.getElementById('isEvrakiForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Seçilen işi al
-            const secilenIs = document.getElementById('talep_edilen_isler').value;
-            if (!secilenIs) {
-                alert('Talep edilen iş seçmelisiniz!');
+            // Seçilen işleri al (checkbox'lardan)
+            const secilenIsler = Array.from(document.querySelectorAll('input[name="isler"]:checked')).map(cb => cb.value);
+            if (secilenIsler.length === 0) {
+                alert('En az bir iş seçmelisiniz!');
                 return;
             }
             
@@ -423,7 +422,7 @@
                 arac_plakasi: document.getElementById('arac_plakasi').value,
                 cekici_dorse: document.getElementById('cekici_dorse').value,
                 marka_model: document.getElementById('marka_model').value,
-                talep_edilen_isler: secilenIs,
+                talep_edilen_isler: secilenIsler.join(', '),
                 musteri_sikayeti: document.getElementById('musteri_sikayeti').value,
                 yapilan_is: document.getElementById('yapilan_is').value,
                 baslama_saati: document.getElementById('baslama_saati').value,
@@ -567,11 +566,12 @@
                         }
                     }
                     
-                    // Talep edilen işi dropdown'a seç
+                    // Talep edilen işleri checkbox'lara işaretle
                     if (evrak.talep_edilen_isler) {
-                        // Eğer virgülle ayrılmış birden fazla iş varsa, ilkini seç
                         const isler = evrak.talep_edilen_isler.split(',').map(i => i.trim());
-                        document.getElementById('talep_edilen_isler').value = isler[0] || '';
+                        document.querySelectorAll('input[name="isler"]').forEach(cb => {
+                            cb.checked = isler.includes(cb.value);
+                        });
                     }
                     
                     // Ürünleri yükle
@@ -653,9 +653,9 @@
         
         async function saveAndSendEmail() {
             // Form validasyonu
-            const secilenIs = document.getElementById('talep_edilen_isler').value;
-            if (!secilenIs) {
-                alert('Talep edilen iş seçmelisiniz!');
+            const secilenIsler = Array.from(document.querySelectorAll('input[name="isler"]:checked')).map(cb => cb.value);
+            if (secilenIsler.length === 0) {
+                alert('En az bir iş seçmelisiniz!');
                 return;
             }
             
@@ -675,7 +675,7 @@
                 arac_plakasi: document.getElementById('arac_plakasi').value,
                 cekici_dorse: document.getElementById('cekici_dorse').value,
                 marka_model: document.getElementById('marka_model').value,
-                talep_edilen_isler: secilenIs,
+                talep_edilen_isler: secilenIsler.join(', '),
                 musteri_sikayeti: document.getElementById('musteri_sikayeti').value,
                 yapilan_is: document.getElementById('yapilan_is').value,
                 baslama_saati: document.getElementById('baslama_saati').value,
