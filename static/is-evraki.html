@@ -304,6 +304,19 @@
         </div>
     </div>
     
+    <!-- İş Evrakı Detay Modal -->
+    <div id="evrakDetayModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; padding: 20px;">
+        <div style="position: relative; background: white; padding: 30px; border-radius: 10px; max-width: 800px; width: 100%; margin: 20px auto; max-height: calc(100vh - 40px); overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 2px solid #667eea;">
+                <h2 style="color: #667eea; margin: 0;">📄 İş Evrakı Detayları</h2>
+                <button onclick="closeEvrakDetayModal()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 16px;">✕ Kapat</button>
+            </div>
+            <div id="evrakDetayContent" style="line-height: 1.8;">
+                <!-- İçerik buraya yüklenecek -->
+            </div>
+        </div>
+    </div>
+    
     <script>
         const API_BASE = window.location.origin;
         let urunler = [];
@@ -502,6 +515,7 @@
                             <td>${item.arac_plakasi || '-'}</td>
                             <td>${(item.toplam_tutar || 0).toFixed(2)} ₺</td>
                             <td>
+                                <button onclick="showEvrak(${item.id})" style="margin-right: 5px; background: #3498db; color: white;">👁️ Göster</button>
                                 <button onclick="editEvrak(${item.id})" style="margin-right: 5px;">✏️ Düzenle</button>
                                 <button onclick="sendEvrak(${item.id})" class="btn-success" style="margin-right: 5px; background: #27ae60;">📧 Gönder</button>
                                 <button onclick="deleteEvrak(${item.id})" class="btn-danger" style="margin-right: 5px;">🗑️ Sil</button>
@@ -609,6 +623,94 @@
                 alert('Hata: ' + error.message);
             }
         }
+        
+        async function showEvrak(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/is-evraki/${id}`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const evrak = data.data;
+                    const content = document.getElementById('evrakDetayContent');
+                    
+                    // Kullanılan ürünleri parse et
+                    let urunler = [];
+                    if (evrak.kullanilan_urunler) {
+                        try {
+                            urunler = JSON.parse(evrak.kullanilan_urunler);
+                        } catch (e) {
+                            urunler = [];
+                        }
+                    }
+                    
+                    // Ürünler tablosu HTML'i
+                    let urunTabloHtml = '';
+                    if (urunler && urunler.length > 0) {
+                        urunTabloHtml = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr style="background-color: #667eea; color: white;"><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Ürün Kodu</th><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Ürün Adı</th><th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Adet</th><th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Birim Fiyat</th><th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Toplam</th></tr></thead><tbody>';
+                        urunler.forEach(urun => {
+                            urunTabloHtml += `<tr><td style="padding: 6px; border: 1px solid #ddd;">${urun.urun_kodu || '-'}</td><td style="padding: 6px; border: 1px solid #ddd;">${urun.urun_adi}</td><td style="padding: 6px; border: 1px solid #ddd; text-align: center;">${urun.adet}</td><td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${urun.birim_fiyat.toFixed(2)} ₺</td><td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${urun.toplam.toFixed(2)} ₺</td></tr>`;
+                        });
+                        const toplam = urunler.reduce((sum, u) => sum + u.toplam, 0);
+                        urunTabloHtml += `<tr style="background-color: #f0f0f0; font-weight: bold;"><td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">TOPLAM:</td><td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${toplam.toFixed(2)} ₺</td></tr></tbody></table>`;
+                    } else {
+                        urunTabloHtml = '<p style="color: #999; font-style: italic;">Kullanılan ürün bulunmamaktadır.</p>';
+                    }
+                    
+                    content.innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                            <div><strong>İş Emri No:</strong> ${evrak.is_emri_no || '-'}</div>
+                            <div><strong>Tarih:</strong> ${evrak.tarih || '-'}</div>
+                            <div><strong>Müşteri Ünvan:</strong> ${evrak.musteri_unvan || '-'}</div>
+                            <div><strong>Telefon:</strong> ${evrak.telefon || '-'}</div>
+                            <div><strong>TC Kimlik No / VKN:</strong> ${evrak.tc_kimlik_no || '-'}</div>
+                            <div><strong>Araç Plakası:</strong> ${evrak.arac_plakasi || '-'}</div>
+                            <div><strong>Çekici / Dorse:</strong> ${evrak.cekici_dorse || '-'}</div>
+                            <div><strong>Marka / Model:</strong> ${evrak.marka_model || '-'}</div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>Talep Edilen İşler:</strong><br>
+                            <span style="color: #555;">${evrak.talep_edilen_isler || '-'}</span>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>Müşteri Şikayeti:</strong><br>
+                            <span style="color: #555; white-space: pre-wrap;">${evrak.musteri_sikayeti || '-'}</span>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>Yapılan İş Açıklaması:</strong><br>
+                            <span style="color: #555; white-space: pre-wrap;">${evrak.yapilan_is || '-'}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div><strong>İşe Başlama Saati:</strong> ${evrak.baslama_saati || '-'}</div>
+                            <div><strong>İş Bitiş Saati:</strong> ${evrak.bitis_saati || '-'}</div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>Toplam Tutar:</strong> <span style="font-size: 18px; color: #27ae60; font-weight: bold;">${(evrak.toplam_tutar || 0).toFixed(2)} ₺</span>
+                        </div>
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #667eea;">
+                            <strong style="font-size: 16px; color: #667eea;">Kullanılan Ürünler:</strong>
+                            ${urunTabloHtml}
+                        </div>
+                    `;
+                    
+                    document.getElementById('evrakDetayModal').style.display = 'block';
+                } else {
+                    alert('İş evrakı yüklenemedi: ' + (data.detail || 'Bilinmeyen hata'));
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+        
+        function closeEvrakDetayModal() {
+            document.getElementById('evrakDetayModal').style.display = 'none';
+        }
+        
+        // Modal dışına tıklanınca kapat
+        document.getElementById('evrakDetayModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEvrakDetayModal();
+            }
+        });
         
         async function deleteEvrak(id) {
             if (!confirm('Bu iş evrakını silmek istediğinizden emin misiniz?')) {
