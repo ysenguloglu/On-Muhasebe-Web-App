@@ -102,6 +102,15 @@ class IsEvrakiDB:
             conn = self.db.connect()
             cursor = self.db._get_cursor(conn)
             
+            # Önce kaydın var olup olmadığını kontrol et
+            check_query = "SELECT id FROM is_evraki WHERE id = ?"
+            check_query = self.db._convert_placeholders(check_query)
+            cursor.execute(check_query, (evrak_id,))
+            existing = cursor.fetchone()
+            
+            if not existing:
+                return (False, "İş evrakı bulunamadı")
+            
             telefon_val = telefon if telefon else None
             arac_plakasi_val = arac_plakasi if arac_plakasi else None
             cekici_dorse_val = cekici_dorse if cekici_dorse else None
@@ -127,9 +136,6 @@ class IsEvrakiDB:
                   marka_model_val, talep_edilen_isler_val, musteri_sikayeti_val, yapilan_is_val,
                   baslama_saati_val, bitis_saati_val, kullanilan_urunler_val, toplam_tutar, tc_kimlik_no_val, evrak_id))
             conn.commit()
-            
-            if cursor.rowcount == 0:
-                return (False, "İş evrakı bulunamadı")
             
             return (True, "İş evrakı başarıyla güncellendi")
         except Exception as e:
