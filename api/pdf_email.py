@@ -16,6 +16,20 @@ from models import IsEvrakiCreateWithEmail
 from dotenv import load_dotenv
 load_dotenv()
 
+# Türkiye saati için timezone
+try:
+    from zoneinfo import ZoneInfo
+    TURKIYE_TIMEZONE = ZoneInfo("Europe/Istanbul")
+except ImportError:
+    # Python < 3.9 için pytz kullan
+    try:
+        import pytz
+        TURKIYE_TIMEZONE = pytz.timezone("Europe/Istanbul")
+    except ImportError:
+        # Fallback: UTC+3 manuel ekleme
+        from datetime import timedelta, timezone
+        TURKIYE_TIMEZONE = timezone(timedelta(hours=3))
+
 
 async def pdf_olustur_api(evrak: IsEvrakiCreateWithEmail, urunler: List[Dict]) -> Optional[str]:
     """HTML'den PDF oluştur - html2pdf.app API kullanarak"""
@@ -30,7 +44,9 @@ async def pdf_olustur_api(evrak: IsEvrakiCreateWithEmail, urunler: List[Dict]) -
         musteri_unvan_temiz = musteri_unvan.translate(tr_chars).replace(" ", "_")
         plaka_temiz = plaka.translate(tr_chars) if plaka else "plaka_yok"
         
-        dosya_adi = f"Is_Emri_No_{is_emri_no}_{plaka_temiz}_{musteri_unvan_temiz}_{datetime.now().strftime('%Y%m%d')}.pdf"
+        # Türkiye saatine göre tarih al
+        turkiye_now = datetime.now(TURKIYE_TIMEZONE)
+        dosya_adi = f"Is_Emri_No_{is_emri_no}_{plaka_temiz}_{musteri_unvan_temiz}_{turkiye_now.strftime('%Y%m%d')}.pdf"
         
         # Geçici dosya oluştur
         temp_dir = tempfile.gettempdir()
@@ -61,9 +77,10 @@ async def pdf_olustur_api(evrak: IsEvrakiCreateWithEmail, urunler: List[Dict]) -
             
             urun_tablo_html += f'<tr style="background-color: #e8f0f8; font-weight: bold;"><td colspan="4" style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 10px;">TOPLAM:</td><td style="padding: 4px; border: 1px solid #ddd; text-align: right; font-size: 10px;">{toplam_tutar:.2f} ₺</td></tr></tbody></table>'
         
-        # Belge oluşturma tarihi ve saati
-        olusturma_tarihi = datetime.now().strftime('%d.%m.%Y')
-        olusturma_saati = datetime.now().strftime('%H:%M')
+        # Belge oluşturma tarihi ve saati (Türkiye saati)
+        turkiye_now = datetime.now(TURKIYE_TIMEZONE)
+        olusturma_tarihi = turkiye_now.strftime('%d.%m.%Y')
+        olusturma_saati = turkiye_now.strftime('%H:%M')
         
         html_content = f'''<!DOCTYPE html>
 <html>
@@ -349,7 +366,9 @@ async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> 
         
         # Email mesajını oluştur
         subject = f"Servis İş Emri - {evrak.arac_plakasi or 'N/A'} - {evrak.musteri_unvan}"
-        body_text = f"""{datetime.now().strftime('%d.%m.%Y')} tarihine ait iş emri PDF olarak ekte gönderilmiştir."""
+        # Türkiye saatine göre tarih al
+        turkiye_now = datetime.now(TURKIYE_TIMEZONE)
+        body_text = f"""{turkiye_now.strftime('%d.%m.%Y')} tarihine ait iş emri PDF olarak ekte gönderilmiştir."""
         
         # MIME mesajı oluştur
         msg = MIMEMultipart()
