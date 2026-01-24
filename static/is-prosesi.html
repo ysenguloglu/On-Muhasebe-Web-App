@@ -215,7 +215,38 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        /* Mobil için kart görünümü */
+        .proses-card {
+            display: none;
+        }
+        
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+                border-radius: 8px;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .header h1 {
+                font-size: 1.5em;
+            }
+            .back-btn {
+                width: 100%;
+                text-align: center;
+                padding: 12px;
+            }
+            .section {
+                padding: 15px;
+            }
+            .section h2 {
+                font-size: 1.3em;
+            }
             .madde-form-row {
                 grid-template-columns: 1fr;
             }
@@ -229,6 +260,96 @@
             }
             .madde-actions button {
                 flex: 1;
+            }
+            button {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
+                padding: 14px;
+                font-size: 16px;
+            }
+            table {
+                display: none;
+            }
+            .proses-card {
+                display: block;
+                background: #f8f9fa;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 15px;
+                border-left: 4px solid #667eea;
+            }
+            .proses-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            .proses-card-title {
+                font-weight: 600;
+                color: #667eea;
+                font-size: 1.1em;
+            }
+            .proses-card-body {
+                display: grid;
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+            .proses-card-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .proses-card-label {
+                font-weight: 600;
+                color: #666;
+                font-size: 0.9em;
+            }
+            .proses-card-value {
+                color: #333;
+                text-align: right;
+                flex: 1;
+                margin-left: 10px;
+            }
+            .proses-card-actions {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-top: 10px;
+            }
+            .proses-card-actions button {
+                padding: 10px;
+                font-size: 14px;
+                margin: 0;
+            }
+            #aramaInput {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-bottom: 15px;
+            }
+            textarea {
+                font-size: 16px; /* iOS zoom önleme */
+            }
+            input {
+                font-size: 16px; /* iOS zoom önleme */
+            }
+            /* Modal mobil iyileştirmeleri */
+            #prosesDetayModal > div {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 10px !important;
+                padding: 20px !important;
+                max-height: calc(100vh - 20px) !important;
+            }
+            #prosesDetayModal h2 {
+                font-size: 1.2em !important;
+            }
+            #prosesDetayModal button {
+                padding: 10px 15px !important;
+                font-size: 14px !important;
             }
         }
     </style>
@@ -277,15 +398,18 @@
                        style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"
                        onkeyup="aramaYap()">
             </div>
+            <!-- Masaüstü için tablo -->
             <div id="proseslerListesi">
                 <p>Yükleniyor...</p>
             </div>
+            <!-- Mobil için kartlar -->
+            <div id="prosesCardsContainer"></div>
         </div>
     </div>
 
     <!-- İş Prosesi Detay Modal -->
     <div id="prosesDetayModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; padding: 20px;">
-        <div style="position: relative; background: white; padding: 30px; border-radius: 10px; max-width: 800px; width: 100%; margin: 20px auto; max-height: calc(100vh - 40px); overflow-y: auto;">
+        <div style="position: relative; background: white; padding: 30px; border-radius: 10px; max-width: 800px; width: 100%; margin: 20px auto; max-height: calc(100vh - 40px); overflow-y: auto; box-sizing: border-box;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 2px solid #667eea;">
                 <h2 style="color: #667eea; margin: 0;">⚙️ İş Prosesi Detayları</h2>
                 <button onclick="closeProsesDetayModal()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 16px;">✕ Kapat</button>
@@ -425,12 +549,17 @@
         function prosesleriGoster(prosesler) {
             tumProsesler = prosesler; // Tüm prosesleri sakla
             const container = document.getElementById('proseslerListesi');
+            const cardsContainer = document.getElementById('prosesCardsContainer');
             
             if (prosesler.length === 0) {
                 container.innerHTML = '<p>Henüz proses kaydı yok.</p>';
+                if (cardsContainer) {
+                    cardsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">Henüz proses kaydı yok.</div>';
+                }
                 return;
             }
 
+            // Masaüstü için tablo
             let html = '<table><thead><tr><th>Proses Adı</th><th>Açıklama</th><th>Madde Sayısı</th><th>Oluşturma Tarihi</th><th>İşlemler</th></tr></thead><tbody>';
             
             prosesler.forEach(proses => {
@@ -455,6 +584,44 @@
             
             html += '</tbody></table>';
             container.innerHTML = html;
+            
+            // Mobil için kartlar
+            if (cardsContainer) {
+                cardsContainer.innerHTML = '';
+                prosesler.forEach(proses => {
+                    const maddeler = proses.maddeler || [];
+                    const toplamSayi = maddeler.length;
+                    const olusturmaTarihi = new Date(proses.olusturma_tarihi).toLocaleDateString('tr-TR');
+                    
+                    const card = document.createElement('div');
+                    card.className = 'proses-card';
+                    card.innerHTML = `
+                        <div class="proses-card-header">
+                            <div class="proses-card-title">${proses.proses_adi}</div>
+                        </div>
+                        <div class="proses-card-body">
+                            <div class="proses-card-row">
+                                <span class="proses-card-label">Açıklama:</span>
+                                <span class="proses-card-value">${proses.aciklama || '-'}</span>
+                            </div>
+                            <div class="proses-card-row">
+                                <span class="proses-card-label">Madde Sayısı:</span>
+                                <span class="proses-card-value">${toplamSayi}</span>
+                            </div>
+                            <div class="proses-card-row">
+                                <span class="proses-card-label">Oluşturma Tarihi:</span>
+                                <span class="proses-card-value">${olusturmaTarihi}</span>
+                            </div>
+                        </div>
+                        <div class="proses-card-actions">
+                            <button onclick="prosesDetayGoster(${proses.id})" class="btn-info">👁️ Göster</button>
+                            <button onclick="prosesDuzenle(${proses.id})">✏️ Düzenle</button>
+                            <button onclick="prosesSil(${proses.id})" class="btn-danger">🗑️ Sil</button>
+                        </div>
+                    `;
+                    cardsContainer.appendChild(card);
+                });
+            }
         }
 
         // Arama yap
