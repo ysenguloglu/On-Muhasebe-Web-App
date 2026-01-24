@@ -12,6 +12,7 @@ from routes import router as routes_router
 from api.stok import router as stok_router
 from api.cari import router as cari_router
 from api.is_evraki import router as is_evraki_router
+from api.is_prosesi import router as is_prosesi_router
 from api.excel import router as excel_router
 
 app = FastAPI(
@@ -56,6 +57,7 @@ app.include_router(excel_router)
 app.include_router(stok_router)
 app.include_router(cari_router)
 app.include_router(is_evraki_router)
+app.include_router(is_prosesi_router)
 
 
 if __name__ == "__main__":

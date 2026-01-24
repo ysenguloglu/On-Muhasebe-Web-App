@@ -231,6 +231,42 @@ class DatabaseConnection:
                     conn.rollback()
                     print(f"⚠️ İş evrakı tablosu oluşturma hatası (devam ediliyor): {e}")
                 
+                try:
+                    # İş prosesi tablosu
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS is_prosesi (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            proses_adi VARCHAR(255) NOT NULL,
+                            aciklama TEXT,
+                            olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """)
+                    conn.commit()
+                except Exception as e:
+                    conn.rollback()
+                    print(f"⚠️ İş prosesi tablosu oluşturma hatası (devam ediliyor): {e}")
+                
+                try:
+                    # İş prosesi maddeleri tablosu
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS is_prosesi_maddeleri (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            proses_id INT NOT NULL,
+                            sira_no INT NOT NULL,
+                            madde_adi VARCHAR(255) NOT NULL,
+                            aciklama TEXT,
+                            tamamlandi BOOLEAN DEFAULT FALSE,
+                            tamamlanma_tarihi TIMESTAMP NULL,
+                            olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (proses_id) REFERENCES is_prosesi(id) ON DELETE CASCADE
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """)
+                    conn.commit()
+                except Exception as e:
+                    conn.rollback()
+                    print(f"⚠️ İş prosesi maddeleri tablosu oluşturma hatası (devam ediliyor): {e}")
+                
                 # MySQL için migration (firma_tipi kolonu)
                 try:
                     cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")
@@ -246,7 +282,7 @@ class DatabaseConnection:
                         SELECT table_name 
                         FROM information_schema.tables 
                         WHERE table_schema = DATABASE()
-                        AND table_name IN ('stok', 'cari', 'is_evraki')
+                        AND table_name IN ('stok', 'cari', 'is_evraki', 'is_prosesi', 'is_prosesi_maddeleri')
                     """)
                     tables = cursor.fetchall()
                     table_names = [row['table_name'] if isinstance(row, dict) else row[0] for row in tables]
@@ -311,6 +347,32 @@ class DatabaseConnection:
                         toplam_tutar REAL DEFAULT 0,
                         tc_kimlik_no TEXT,
                         olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # İş prosesi tablosu
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS is_prosesi (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        proses_adi TEXT NOT NULL,
+                        aciklama TEXT,
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # İş prosesi maddeleri tablosu
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS is_prosesi_maddeleri (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        proses_id INTEGER NOT NULL,
+                        sira_no INTEGER NOT NULL,
+                        madde_adi TEXT NOT NULL,
+                        aciklama TEXT,
+                        tamamlandi INTEGER DEFAULT 0,
+                        tamamlanma_tarihi TIMESTAMP,
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (proses_id) REFERENCES is_prosesi(id) ON DELETE CASCADE
                     )
                 """)
                 

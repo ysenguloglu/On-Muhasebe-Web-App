@@ -143,3 +143,27 @@ class IsEvrakiUpdateWithEmail(BaseModel):
     vergi_dairesi: Optional[str] = ""
     firma_tipi: Optional[str] = "Şahıs"
     send_email: Optional[bool] = True
+
+
+class IsProsesiMaddeCreate(BaseModel):
+    sira_no: int
+    madde_adi: str
+    aciklama: Optional[str] = ""
+
+
+class IsProsesiCreate(BaseModel):
+    proses_adi: str
+    aciklama: Optional[str] = ""
+    maddeler: Optional[List[IsProsesiMaddeCreate]] = []
+
+
+class IsProsesiUpdate(BaseModel):
+    proses_adi: str
+    aciklama: Optional[str] = ""
+
+
+class IsProsesiMaddeUpdate(BaseModel):
+    sira_no: int
+    madde_adi: str
+    aciklama: Optional[str] = ""
+    tamamlandi: Optional[bool] = False

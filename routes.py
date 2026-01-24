@@ -134,6 +134,12 @@ async def root():
                     <h2>İş Evrakı</h2>
                     <p>İş emirleri oluşturup yönetebilirsiniz.</p>
                 </a>
+                
+                <a href="/is-prosesi" class="card">
+                    <div class="card-icon">⚙️</div>
+                    <h2>İş Prosesleri</h2>
+                    <p>İş proseslerini tanımlayıp takip edebilirsiniz.</p>
+                </a>
             </div>
             
             <div class="footer">
@@ -175,3 +181,13 @@ async def is_evraki_ui():
             return f.read()
     except FileNotFoundError:
         return HTMLResponse("<h1>İş evrakı sayfası bulunamadı</h1>", status_code=404)
+
+
+@router.get("/is-prosesi", response_class=HTMLResponse)
+async def is_prosesi_ui():
+    """İş prosesi web arayüzü"""
+    try:
+        with open("static/is-prosesi.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse("<h1>İş prosesi sayfası bulunamadı</h1>", status_code=404)

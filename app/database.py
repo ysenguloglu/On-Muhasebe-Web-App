@@ -6,6 +6,7 @@ from .db_connection import DatabaseConnection
 from .db_stok import StokDB
 from .db_cari import CariDB
 from .db_is_evraki import IsEvrakiDB
+from .db_is_prosesi import IsProsesiDB
 
 
 class Database:
@@ -37,6 +38,7 @@ class Database:
         self.stok = StokDB(self.db_conn)
         self.cari = CariDB(self.db_conn)
         self.is_evraki = IsEvrakiDB(self.db_conn)
+        self.is_prosesi = IsProsesiDB(self.db_conn)
     
     # ========== STOK İŞLEMLERİ (Delegasyon) ==========
     
@@ -115,6 +117,38 @@ class Database:
     
     def is_emri_no_sonraki(self, *args, **kwargs):
         return self.is_evraki.is_emri_no_sonraki(*args, **kwargs)
+    
+    # ========== İŞ PROSESİ İŞLEMLERİ (Delegasyon) ==========
+    
+    def is_prosesi_ekle(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_ekle(*args, **kwargs)
+    
+    def is_prosesi_listele(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_listele(*args, **kwargs)
+    
+    def is_prosesi_getir(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_getir(*args, **kwargs)
+    
+    def is_prosesi_guncelle(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_guncelle(*args, **kwargs)
+    
+    def is_prosesi_sil(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_sil(*args, **kwargs)
+    
+    def is_prosesi_madde_ekle(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_madde_ekle(*args, **kwargs)
+    
+    def is_prosesi_maddeleri_getir(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_maddeleri_getir(*args, **kwargs)
+    
+    def is_prosesi_madde_guncelle(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_madde_guncelle(*args, **kwargs)
+    
+    def is_prosesi_madde_sil(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_madde_sil(*args, **kwargs)
+    
+    def is_prosesi_tamamla_madde(self, *args, **kwargs):
+        return self.is_prosesi.is_prosesi_tamamla_madde(*args, **kwargs)
     
     # ========== BAĞLANTI YÖNETİMİ (Delegasyon) ==========
     

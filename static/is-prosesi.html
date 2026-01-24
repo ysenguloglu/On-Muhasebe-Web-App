@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ön Muhasebe - İş Prosesleri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            color: #667eea;
+        }
+        .back-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .btn-success {
+            background: #27ae60;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .btn-info {
+            background: #3498db;
+        }
+        .btn-info:hover {
+            background: #2980b9;
+        }
+        .btn-secondary {
+            background: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .maddeler-listesi {
+            margin-top: 20px;
+        }
+        .madde-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .madde-item.tamamlandi {
+            background: #d4edda;
+            border-left-color: #27ae60;
+            opacity: 0.7;
+        }
+        .madde-bilgi {
+            flex: 1;
+        }
+        .madde-baslik {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .madde-aciklama {
+            color: #666;
+            font-size: 14px;
+        }
+        .madde-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .madde-actions button {
+            padding: 8px 16px;
+            font-size: 14px;
+            margin: 0;
+        }
+        .madde-form {
+            background: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .madde-form-row {
+            display: grid;
+            grid-template-columns: 80px 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .madde-form-row input {
+            margin: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .hidden {
+            display: none;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        @media (max-width: 768px) {
+            .madde-form-row {
+                grid-template-columns: 1fr;
+            }
+            .madde-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .madde-actions {
+                width: 100%;
+                margin-top: 10px;
+            }
+            .madde-actions button {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ İş Prosesleri</h1>
+            <a href="/" class="back-btn">← Ana Sayfa</a>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <!-- Yeni Proses Ekleme Formu -->
+        <div class="section">
+            <h2 id="formTitle">Yeni İş Prosesi Ekle</h2>
+            <form id="prosesForm">
+                <input type="hidden" id="prosesId" value="">
+                
+                <div class="form-group">
+                    <label for="prosesAdi">Proses Adı *</label>
+                    <input type="text" id="prosesAdi" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prosesAciklama">Açıklama</label>
+                    <textarea id="prosesAciklama" placeholder="Proses hakkında genel açıklama..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Proses Maddeleri</label>
+                    <div id="maddelerContainer"></div>
+                    <button type="button" onclick="yeniMaddeEkle()" class="btn-info">+ Madde Ekle</button>
+                </div>
+
+                <button type="submit" id="submitBtn">Kaydet</button>
+                <button type="button" onclick="formuTemizle()" class="btn-secondary" id="cancelBtn" style="display: none;">İptal</button>
+            </form>
+        </div>
+
+        <!-- Kayıtlı Prosesler -->
+        <div class="section">
+            <h2>Kayıtlı İş Prosesleri</h2>
+            <div id="proseslerListesi">
+                <p>Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mevcutMaddeler = [];
+        let editMode = false;
+        let currentProsesId = null;
+
+        // Sayfa yüklendiğinde prosesleri getir
+        document.addEventListener('DOMContentLoaded', function() {
+            prosesleriGetir();
+        });
+
+        // Form submit
+        document.getElementById('prosesForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const prosesAdi = document.getElementById('prosesAdi').value;
+            const prosesAciklama = document.getElementById('prosesAciklama').value;
+            const maddeler = mevcutMaddeler.filter(m => m.madde_adi.trim() !== '');
+
+            if (!prosesAdi.trim()) {
+                alertGoster('Proses adı gereklidir!', 'error');
+                return;
+            }
+
+            try {
+                const prosesData = {
+                    proses_adi: prosesAdi,
+                    aciklama: prosesAciklama,
+                    maddeler: maddeler.map((m, index) => ({
+                        sira_no: m.sira_no || (index + 1),
+                        madde_adi: m.madde_adi,
+                        aciklama: m.aciklama || ''
+                    }))
+                };
+
+                let response;
+                if (editMode && currentProsesId) {
+                    // Güncelleme
+                    response = await fetch(`/api/is-prosesi/${currentProsesId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            proses_adi: prosesAdi,
+                            aciklama: prosesAciklama
+                        })
+                    });
+                    
+                    // Maddeleri ayrı ayrı güncelle/ekle
+                    if (maddeler.length > 0) {
+                        // Önce mevcut maddeleri getir
+                        const mevcutMaddelerResponse = await fetch(`/api/is-prosesi/${currentProsesId}/maddeler`);
+                        const mevcutMaddelerData = await mevcutMaddelerResponse.json();
+                        const mevcutMaddelerList = mevcutMaddelerData.data || [];
+
+                        // Her madde için işlem yap
+                        for (let i = 0; i < maddeler.length; i++) {
+                            const madde = maddeler[i];
+                            if (madde.id) {
+                                // Güncelle
+                                await fetch(`/api/is-prosesi/maddeler/${madde.id}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        sira_no: madde.sira_no || (i + 1),
+                                        madde_adi: madde.madde_adi,
+                                        aciklama: madde.aciklama || '',
+                                        tamamlandi: madde.tamamlandi || false
+                                    })
+                                });
+                            } else {
+                                // Yeni ekle
+                                await fetch(`/api/is-prosesi/${currentProsesId}/maddeler`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        sira_no: madde.sira_no || (i + 1),
+                                        madde_adi: madde.madde_adi,
+                                        aciklama: madde.aciklama || ''
+                                    })
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    // Yeni ekleme
+                    response = await fetch('/api/is-prosesi', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(prosesData)
+                    });
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alertGoster(editMode ? 'Proses başarıyla güncellendi!' : 'Proses başarıyla kaydedildi!', 'success');
+                    formuTemizle();
+                    prosesleriGetir();
+                } else {
+                    alertGoster(data.detail || 'Bir hata oluştu!', 'error');
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alertGoster('Bir hata oluştu: ' + error.message, 'error');
+            }
+        });
+
+        // Prosesleri getir
+        async function prosesleriGetir() {
+            try {
+                const response = await fetch('/api/is-prosesi');
+                const data = await response.json();
+                
+                if (data.success) {
+                    prosesleriGoster(data.data);
+                } else {
+                    document.getElementById('proseslerListesi').innerHTML = '<p>Prosesler yüklenemedi.</p>';
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                document.getElementById('proseslerListesi').innerHTML = '<p>Bir hata oluştu.</p>';
+            }
+        }
+
+        // Prosesleri göster
+        function prosesleriGoster(prosesler) {
+            const container = document.getElementById('proseslerListesi');
+            
+            if (prosesler.length === 0) {
+                container.innerHTML = '<p>Henüz proses kaydı yok.</p>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Proses Adı</th><th>Açıklama</th><th>Madde Sayısı</th><th>Tamamlanan</th><th>Oluşturma Tarihi</th><th>İşlemler</th></tr></thead><tbody>';
+            
+            prosesler.forEach(proses => {
+                const maddeler = proses.maddeler || [];
+                const tamamlananSayisi = maddeler.filter(m => m.tamamlandi).length;
+                const toplamSayi = maddeler.length;
+                const olusturmaTarihi = new Date(proses.olusturma_tarihi).toLocaleDateString('tr-TR');
+                
+                html += `
+                    <tr>
+                        <td><strong>${proses.proses_adi}</strong></td>
+                        <td>${proses.aciklama || '-'}</td>
+                        <td>${toplamSayi}</td>
+                        <td><span class="badge ${tamamlananSayisi === toplamSayi && toplamSayi > 0 ? 'badge-success' : 'badge-warning'}">${tamamlananSayisi}/${toplamSayi}</span></td>
+                        <td>${olusturmaTarihi}</td>
+                        <td>
+                            <button onclick="prosesDetayGoster(${proses.id})" class="btn-info" style="margin-right: 5px;">👁️ Göster</button>
+                            <button onclick="prosesDuzenle(${proses.id})" style="margin-right: 5px;">✏️ Düzenle</button>
+                            <button onclick="prosesSil(${proses.id})" class="btn-danger">🗑️ Sil</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Proses detay göster
+        async function prosesDetayGoster(prosesId) {
+            try {
+                const response = await fetch(`/api/is-prosesi/${prosesId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const proses = data.data;
+                    const maddeler = proses.maddeler || [];
+                    
+                    let maddelerHtml = '';
+                    if (maddeler.length === 0) {
+                        maddelerHtml = '<p>Henüz madde eklenmemiş.</p>';
+                    } else {
+                        maddeler.forEach(madde => {
+                            const tamamlandiClass = madde.tamamlandi ? 'tamamlandi' : '';
+                            const tamamlandiBadge = madde.tamamlandi ? '<span class="badge badge-success">✓ Tamamlandı</span>' : '<span class="badge badge-warning">Beklemede</span>';
+                            maddelerHtml += `
+                                <div class="madde-item ${tamamlandiClass}">
+                                    <div class="madde-bilgi">
+                                        <div class="madde-baslik">${madde.sira_no}. ${madde.madde_adi} ${tamamlandiBadge}</div>
+                                        ${madde.aciklama ? `<div class="madde-aciklama">${madde.aciklama}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    alert(`
+Proses: ${proses.proses_adi}
+Açıklama: ${proses.aciklama || '-'}
+Oluşturma Tarihi: ${new Date(proses.olusturma_tarihi).toLocaleString('tr-TR')}
+
+Maddeler:
+${maddeler.map(m => `${m.sira_no}. ${m.madde_adi} ${m.tamamlandi ? '(Tamamlandı)' : ''}`).join('\n')}
+                    `);
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alertGoster('Proses detayları yüklenemedi!', 'error');
+            }
+        }
+
+        // Proses düzenle
+        async function prosesDuzenle(prosesId) {
+            try {
+                const response = await fetch(`/api/is-prosesi/${prosesId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const proses = data.data;
+                    
+                    document.getElementById('prosesId').value = proses.id;
+                    document.getElementById('prosesAdi').value = proses.proses_adi;
+                    document.getElementById('prosesAciklama').value = proses.aciklama || '';
+                    
+                    // Maddeleri yükle
+                    mevcutMaddeler = (proses.maddeler || []).map(m => ({
+                        id: m.id,
+                        sira_no: m.sira_no,
+                        madde_adi: m.madde_adi,
+                        aciklama: m.aciklama || '',
+                        tamamlandi: m.tamamlandi || false
+                    }));
+                    
+                    maddeleriGoster();
+                    
+                    editMode = true;
+                    currentProsesId = prosesId;
+                    document.getElementById('formTitle').textContent = 'İş Prosesi Düzenle';
+                    document.getElementById('submitBtn').textContent = 'Güncelle';
+                    document.getElementById('cancelBtn').style.display = 'inline-block';
+                    
+                    // Forma scroll
+                    document.querySelector('.section').scrollIntoView({ behavior: 'smooth' });
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alertGoster('Proses yüklenemedi!', 'error');
+            }
+        }
+
+        // Proses sil
+        async function prosesSil(prosesId) {
+            if (!confirm('Bu prosesi silmek istediğinize emin misiniz? Tüm maddeleri de silinecektir.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/is-prosesi/${prosesId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alertGoster('Proses başarıyla silindi!', 'success');
+                    prosesleriGetir();
+                } else {
+                    alertGoster(data.detail || 'Silme işlemi başarısız!', 'error');
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alertGoster('Bir hata oluştu!', 'error');
+            }
+        }
+
+        // Yeni madde ekle
+        function yeniMaddeEkle() {
+            mevcutMaddeler.push({
+                id: null,
+                sira_no: mevcutMaddeler.length + 1,
+                madde_adi: '',
+                aciklama: '',
+                tamamlandi: false
+            });
+            maddeleriGoster();
+        }
+
+        // Maddeleri göster
+        function maddeleriGoster() {
+            const container = document.getElementById('maddelerContainer');
+            
+            if (mevcutMaddeler.length === 0) {
+                container.innerHTML = '<p style="color: #666; margin-bottom: 10px;">Henüz madde eklenmemiş.</p>';
+                return;
+            }
+            
+            let html = '';
+            mevcutMaddeler.forEach((madde, index) => {
+                html += `
+                    <div class="madde-form">
+                        <div class="madde-form-row">
+                            <input type="number" placeholder="Sıra" value="${madde.sira_no || (index + 1)}" 
+                                   onchange="maddeGuncelle(${index}, 'sira_no', this.value)">
+                            <input type="text" placeholder="Madde adı *" value="${madde.madde_adi || ''}" 
+                                   onchange="maddeGuncelle(${index}, 'madde_adi', this.value)" required>
+                            <button type="button" onclick="maddeSil(${index})" class="btn-danger">Sil</button>
+                        </div>
+                        <div class="form-group">
+                            <textarea placeholder="Açıklama (opsiyonel)" 
+                                      onchange="maddeGuncelle(${index}, 'aciklama', this.value)">${madde.aciklama || ''}</textarea>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Madde güncelle
+        function maddeGuncelle(index, field, value) {
+            if (mevcutMaddeler[index]) {
+                if (field === 'sira_no') {
+                    mevcutMaddeler[index].sira_no = parseInt(value) || (index + 1);
+                } else {
+                    mevcutMaddeler[index][field] = value;
+                }
+            }
+        }
+
+        // Madde sil
+        function maddeSil(index) {
+            if (confirm('Bu maddeyi silmek istediğinize emin misiniz?')) {
+                mevcutMaddeler.splice(index, 1);
+                maddeleriGoster();
+            }
+        }
+
+        // Formu temizle
+        function formuTemizle() {
+            document.getElementById('prosesForm').reset();
+            document.getElementById('prosesId').value = '';
+            mevcutMaddeler = [];
+            maddeleriGoster();
+            editMode = false;
+            currentProsesId = null;
+            document.getElementById('formTitle').textContent = 'Yeni İş Prosesi Ekle';
+            document.getElementById('submitBtn').textContent = 'Kaydet';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        // Alert göster
+        function alertGoster(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            container.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
