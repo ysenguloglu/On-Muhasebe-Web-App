@@ -261,6 +261,11 @@
         </form>
         
         <h2 style="margin-top: 40px; color: #667eea;">Kayıtlı İş Evrakları</h2>
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="aramaInput" placeholder="Müşteri ünvanı ile ara..." 
+                   style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"
+                   onkeyup="aramaYap()">
+        </div>
         <table id="evrakTable">
             <thead>
                 <tr>
@@ -320,6 +325,7 @@
     <script>
         const API_BASE = window.location.origin;
         let urunler = [];
+        let tumEvraklar = []; // Tüm evrakları sakla (arama için)
         
         // Sayfa yüklendiğinde iş emri no'yu al
         window.onload = async function() {
@@ -502,30 +508,58 @@
             try {
                 const response = await fetch(`${API_BASE}/api/is-evraki`);
                 const data = await response.json();
-                const tbody = document.getElementById('evrakTableBody');
-                tbody.innerHTML = '';
                 
                 if (data.success && data.data) {
-                    data.data.forEach(item => {
-                        const row = tbody.insertRow();
-                        row.innerHTML = `
-                            <td>${item.is_emri_no}</td>
-                            <td>${item.tarih}</td>
-                            <td>${item.musteri_unvan}</td>
-                            <td>${item.arac_plakasi || '-'}</td>
-                            <td>${(item.toplam_tutar || 0).toFixed(2)} ₺</td>
-                            <td>
-                                <button onclick="showEvrak(${item.id})" style="margin-right: 5px; background: #3498db; color: white;">👁️ Göster</button>
-                                <button onclick="editEvrak(${item.id})" style="margin-right: 5px;">✏️ Düzenle</button>
-                                <button onclick="sendEvrak(${item.id})" class="btn-success" style="margin-right: 5px; background: #27ae60;">📧 Gönder</button>
-                                <button onclick="deleteEvrak(${item.id})" class="btn-danger" style="margin-right: 5px;">🗑️ Sil</button>
-                            </td>
-                        `;
-                    });
+                    tumEvraklar = data.data; // Tüm evrakları sakla
+                    evraklariGoster(tumEvraklar);
                 }
             } catch (error) {
                 console.error('Hata:', error);
             }
+        }
+
+        // Evrakları göster
+        function evraklariGoster(evraklar) {
+            const tbody = document.getElementById('evrakTableBody');
+            tbody.innerHTML = '';
+            
+            if (evraklar.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">Kayıt bulunamadı.</td></tr>';
+                return;
+            }
+            
+            evraklar.forEach(item => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${item.is_emri_no}</td>
+                    <td>${item.tarih}</td>
+                    <td>${item.musteri_unvan}</td>
+                    <td>${item.arac_plakasi || '-'}</td>
+                    <td>${(item.toplam_tutar || 0).toFixed(2)} ₺</td>
+                    <td>
+                        <button onclick="showEvrak(${item.id})" style="margin-right: 5px; background: #3498db; color: white;">👁️ Göster</button>
+                        <button onclick="editEvrak(${item.id})" style="margin-right: 5px;">✏️ Düzenle</button>
+                        <button onclick="sendEvrak(${item.id})" class="btn-success" style="margin-right: 5px; background: #27ae60;">📧 Gönder</button>
+                        <button onclick="deleteEvrak(${item.id})" class="btn-danger" style="margin-right: 5px;">🗑️ Sil</button>
+                    </td>
+                `;
+            });
+        }
+
+        // Arama yap
+        function aramaYap() {
+            const aramaMetni = document.getElementById('aramaInput').value.toLowerCase().trim();
+            
+            if (aramaMetni === '') {
+                evraklariGoster(tumEvraklar);
+                return;
+            }
+            
+            const filtrelenmisEvraklar = tumEvraklar.filter(evrak => 
+                evrak.musteri_unvan && evrak.musteri_unvan.toLowerCase().includes(aramaMetni)
+            );
+            
+            evraklariGoster(filtrelenmisEvraklar);
         }
         
         async function editEvrak(id) {

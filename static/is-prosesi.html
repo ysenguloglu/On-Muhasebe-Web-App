@@ -272,8 +272,26 @@
         <!-- Kayıtlı Prosesler -->
         <div class="section">
             <h2>Kayıtlı İş Prosesleri</h2>
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="aramaInput" placeholder="Proses adı ile ara..." 
+                       style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"
+                       onkeyup="aramaYap()">
+            </div>
             <div id="proseslerListesi">
                 <p>Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- İş Prosesi Detay Modal -->
+    <div id="prosesDetayModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; padding: 20px;">
+        <div style="position: relative; background: white; padding: 30px; border-radius: 10px; max-width: 800px; width: 100%; margin: 20px auto; max-height: calc(100vh - 40px); overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 2px solid #667eea;">
+                <h2 style="color: #667eea; margin: 0;">⚙️ İş Prosesi Detayları</h2>
+                <button onclick="closeProsesDetayModal()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 16px;">✕ Kapat</button>
+            </div>
+            <div id="prosesDetayContent" style="line-height: 1.8;">
+                <!-- İçerik buraya yüklenecek -->
             </div>
         </div>
     </div>
@@ -401,8 +419,11 @@
             }
         }
 
+        let tumProsesler = []; // Tüm prosesleri sakla (arama için)
+
         // Prosesleri göster
         function prosesleriGoster(prosesler) {
+            tumProsesler = prosesler; // Tüm prosesleri sakla
             const container = document.getElementById('proseslerListesi');
             
             if (prosesler.length === 0) {
@@ -410,11 +431,10 @@
                 return;
             }
 
-            let html = '<table><thead><tr><th>Proses Adı</th><th>Açıklama</th><th>Madde Sayısı</th><th>Tamamlanan</th><th>Oluşturma Tarihi</th><th>İşlemler</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Proses Adı</th><th>Açıklama</th><th>Madde Sayısı</th><th>Oluşturma Tarihi</th><th>İşlemler</th></tr></thead><tbody>';
             
             prosesler.forEach(proses => {
                 const maddeler = proses.maddeler || [];
-                const tamamlananSayisi = maddeler.filter(m => m.tamamlandi).length;
                 const toplamSayi = maddeler.length;
                 const olusturmaTarihi = new Date(proses.olusturma_tarihi).toLocaleDateString('tr-TR');
                 
@@ -423,7 +443,6 @@
                         <td><strong>${proses.proses_adi}</strong></td>
                         <td>${proses.aciklama || '-'}</td>
                         <td>${toplamSayi}</td>
-                        <td><span class="badge ${tamamlananSayisi === toplamSayi && toplamSayi > 0 ? 'badge-success' : 'badge-warning'}">${tamamlananSayisi}/${toplamSayi}</span></td>
                         <td>${olusturmaTarihi}</td>
                         <td>
                             <button onclick="prosesDetayGoster(${proses.id})" class="btn-info" style="margin-right: 5px;">👁️ Göster</button>
@@ -438,7 +457,23 @@
             container.innerHTML = html;
         }
 
-        // Proses detay göster
+        // Arama yap
+        function aramaYap() {
+            const aramaMetni = document.getElementById('aramaInput').value.toLowerCase().trim();
+            
+            if (aramaMetni === '') {
+                prosesleriGoster(tumProsesler);
+                return;
+            }
+            
+            const filtrelenmisProsesler = tumProsesler.filter(proses => 
+                proses.proses_adi.toLowerCase().includes(aramaMetni)
+            );
+            
+            prosesleriGoster(filtrelenmisProsesler);
+        }
+
+        // Proses detay göster (Modal)
         async function prosesDetayGoster(prosesId) {
             try {
                 const response = await fetch(`/api/is-prosesi/${prosesId}`);
@@ -447,39 +482,60 @@
                 if (data.success) {
                     const proses = data.data;
                     const maddeler = proses.maddeler || [];
+                    const content = document.getElementById('prosesDetayContent');
                     
                     let maddelerHtml = '';
                     if (maddeler.length === 0) {
-                        maddelerHtml = '<p>Henüz madde eklenmemiş.</p>';
+                        maddelerHtml = '<p style="color: #999; font-style: italic; padding: 20px; text-align: center;">Henüz madde eklenmemiş.</p>';
                     } else {
                         maddeler.forEach(madde => {
-                            const tamamlandiClass = madde.tamamlandi ? 'tamamlandi' : '';
-                            const tamamlandiBadge = madde.tamamlandi ? '<span class="badge badge-success">✓ Tamamlandı</span>' : '<span class="badge badge-warning">Beklemede</span>';
                             maddelerHtml += `
-                                <div class="madde-item ${tamamlandiClass}">
-                                    <div class="madde-bilgi">
-                                        <div class="madde-baslik">${madde.sira_no}. ${madde.madde_adi} ${tamamlandiBadge}</div>
-                                        ${madde.aciklama ? `<div class="madde-aciklama">${madde.aciklama}</div>` : ''}
+                                <div style="background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #667eea;">
+                                    <div style="font-weight: 600; color: #333; margin-bottom: 5px;">
+                                        ${madde.sira_no}. ${madde.madde_adi}
                                     </div>
+                                    ${madde.aciklama ? `<div style="color: #666; font-size: 14px; margin-top: 5px;">${madde.aciklama}</div>` : ''}
                                 </div>
                             `;
                         });
                     }
                     
-                    alert(`
-Proses: ${proses.proses_adi}
-Açıklama: ${proses.aciklama || '-'}
-Oluşturma Tarihi: ${new Date(proses.olusturma_tarihi).toLocaleString('tr-TR')}
-
-Maddeler:
-${maddeler.map(m => `${m.sira_no}. ${m.madde_adi} ${m.tamamlandi ? '(Tamamlandı)' : ''}`).join('\n')}
-                    `);
+                    content.innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                            <div><strong>Proses Adı:</strong> ${proses.proses_adi || '-'}</div>
+                            <div><strong>Oluşturma Tarihi:</strong> ${new Date(proses.olusturma_tarihi).toLocaleString('tr-TR')}</div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>Açıklama:</strong><br>
+                            <span style="color: #555; white-space: pre-wrap;">${proses.aciklama || '-'}</span>
+                        </div>
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #667eea;">
+                            <strong style="font-size: 16px; color: #667eea; margin-bottom: 15px; display: block;">Proses Maddeleri (${maddeler.length}):</strong>
+                            ${maddelerHtml}
+                        </div>
+                    `;
+                    
+                    document.getElementById('prosesDetayModal').style.display = 'block';
+                } else {
+                    alertGoster('Proses detayları yüklenemedi!', 'error');
                 }
             } catch (error) {
                 console.error('Hata:', error);
                 alertGoster('Proses detayları yüklenemedi!', 'error');
             }
         }
+
+        // Modal kapat
+        function closeProsesDetayModal() {
+            document.getElementById('prosesDetayModal').style.display = 'none';
+        }
+        
+        // Modal dışına tıklanınca kapat
+        document.getElementById('prosesDetayModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeProsesDetayModal();
+            }
+        });
 
         // Proses düzenle
         async function prosesDuzenle(prosesId) {
