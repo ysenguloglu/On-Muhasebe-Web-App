@@ -8,12 +8,12 @@ FastAPI ile geliştirilmiş, web tabanlı ön muhasebe uygulaması. Stok yöneti
 - **👥 Cari Hesap Yönetimi**: Müşteri ve tedarikçi kayıtları, TC/VKN kontrolü
 - **📄 İş Evrakı**: İş emri oluşturma, PDF oluşturma ve e-posta gönderme
 - **🌐 Web Arayüzü**: Modern, mobil uyumlu arayüz
-- **💾 Veritabanı**: SQLite veya MySQL desteği
+- **💾 Veritabanı**: MySQL
 
 ## 📋 Gereksinimler
 
 - Python 3.9 veya üzeri
-- MySQL (opsiyonel, SQLite varsayılan)
+- MySQL (DATABASE_URL zorunlu)
 
 ## 🔧 Kurulum
 
@@ -65,7 +65,7 @@ GMAIL_TOKEN_JSON={"token":"...","refresh_token":"..."}
 EMAIL_FROM=your_email@gmail.com
 EMAIL_TO=recipient@example.com
 
-# Veritabanı (Opsiyonel - MySQL için)
+# Veritabanı (Zorunlu - MySQL)
 DATABASE_URL=mysql://user:password@host:port/database
 ```
 
@@ -84,8 +84,8 @@ Tarayıcıda açın: `http://localhost:10000`
 1. Railway.com'da yeni proje oluşturun
 2. GitHub repository'nizi bağlayın
 3. MySQL servisi ekleyin
-4. Environment variables'ı ekleyin:
-   - `DATABASE_URL` → MySQL servisinden otomatik gelir
+4. Environment variables ekleyin (DATABASE_URL zorunlu):
+   - `DATABASE_URL` → MySQL servisinden (veya kendi MySQL adresiniz)
    - `PDF_API_KEY`
    - `GMAIL_TOKEN_JSON`
    - `EMAIL_FROM`
@@ -150,11 +150,13 @@ on-muhasebe-web/
 
 ## 💾 Veritabanı
 
-Varsayılan olarak SQLite kullanılır. MySQL kullanmak için `DATABASE_URL` environment variable'ını ayarlayın:
+Yalnızca MySQL kullanılır. `DATABASE_URL` ortam değişkeni zorunludur:
 
 ```env
 DATABASE_URL=mysql://user:password@host:port/database
 ```
+
+Örnek: `mysql://user:password@localhost:3306/onmuhasebe` veya `mysql+pymysql://...`
 
 ## 🔍 Sorun Giderme
 

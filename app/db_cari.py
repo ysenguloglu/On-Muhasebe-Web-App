@@ -115,12 +115,8 @@ class CariDB:
         cursor.execute(query, params)
         rows = cursor.fetchall()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return list(rows)  # Zaten dictionary listesi
-        else:
-            return [dict(row) for row in rows]  # SQLite Row objesini dict'e çevir
-    
+        return list(rows)
+
     def cari_getir(self, cari_id: int) -> Optional[Dict]:
         """Belirli bir cari hesabı getir"""
         conn = self.db.connect()
@@ -130,12 +126,8 @@ class CariDB:
         cursor.execute(query, (cari_id,))
         row = cursor.fetchone()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return row if row else None
-        else:
-            return dict(row) if row else None
-    
+        return row if row else None
+
     def cari_tc_ile_ara(self, tc_kimlik_no: str) -> Optional[Dict]:
         """TC kimlik no ile cari hesap ara"""
         if not tc_kimlik_no or not tc_kimlik_no.strip():
@@ -148,11 +140,7 @@ class CariDB:
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (tc_kimlik_no.strip(),))
             row = cursor.fetchone()
-            # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-            if self.db.is_mysql:
-                return row if row else None
-            else:
-                return dict(row) if row else None
+            return row if row else None
         finally:
             if conn:
                 try:
@@ -160,7 +148,7 @@ class CariDB:
                     self.db.conn = None
                 except:
                     pass
-    
+
     def cari_unvan_ile_ara(self, unvan: str) -> Optional[Dict]:
         """Ünvan ile cari hesap ara"""
         if not unvan or not unvan.strip():
@@ -173,11 +161,7 @@ class CariDB:
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (unvan.strip(),))
             row = cursor.fetchone()
-            # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-            if self.db.is_mysql:
-                return row if row else None
-            else:
-                return dict(row) if row else None
+            return row if row else None
         finally:
             if conn:
                 try:
@@ -185,44 +169,26 @@ class CariDB:
                     self.db.conn = None
                 except:
                     pass
-    
+
     def cari_sonraki_kod_olustur(self) -> str:
         """Bir sonraki cari kodunu oluştur (sayısal)"""
         conn = None
         try:
             conn = self.db.connect()
-            cursor = self.db._get_cursor()
-            
-            # MySQL ve SQLite için regex/pattern matching
-            if self.db.is_mysql:
-                # MySQL için REGEXP kullan
-                query = """
-                    SELECT cari_kodu FROM cari 
-                    WHERE cari_kodu IS NOT NULL 
-                    AND cari_kodu REGEXP '^[0-9]+$'
-                    ORDER BY CAST(cari_kodu AS UNSIGNED) DESC
-                    LIMIT 1
-                """
-            else:
-                # SQLite için GLOB kullan
-                query = """
-                    SELECT cari_kodu FROM cari 
-                    WHERE cari_kodu IS NOT NULL 
-                    AND cari_kodu GLOB '[0-9]*'
-                    ORDER BY CAST(cari_kodu AS INTEGER) DESC
-                    LIMIT 1
-                """
+            cursor = self.db._get_cursor(conn)
+
+            query = """
+                SELECT cari_kodu FROM cari
+                WHERE cari_kodu IS NOT NULL
+                AND cari_kodu REGEXP '^[0-9]+$'
+                ORDER BY CAST(cari_kodu AS UNSIGNED) DESC
+                LIMIT 1
+            """
             cursor.execute(query)
             row = cursor.fetchone()
-            
-            # MySQL ve SQLite için farklı erişim
-            if row:
-                if self.db.is_mysql:
-                    cari_kodu = row['cari_kodu']
-                else:
-                    # SQLite: Normal cursor, index erişimi
-                    cari_kodu = row[0]
-                
+
+            if row and row.get('cari_kodu'):
+                cari_kodu = row['cari_kodu']
                 if cari_kodu:
                     try:
                         son_kod = int(cari_kodu)
@@ -261,12 +227,7 @@ class CariDB:
                 cursor.execute(query, (vergi_no.strip(),))
                 row = cursor.fetchone()
                 if row:
-                    # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-                    if self.db.is_mysql:
-                        mevcut_cari = row
-                    else:
-                        mevcut_cari = dict(row)
-                    return (True, f"Bu VKN'ye sahip cari hesap zaten mevcut: {mevcut_cari.get('unvan', '')}")
+                    return (True, f"Bu VKN'ye sahip cari hesap zaten mevcut: {row.get('unvan', '')}")
             finally:
                 if conn:
                     try:

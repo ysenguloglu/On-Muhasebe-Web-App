@@ -10,25 +10,19 @@ from .db_is_prosesi import IsProsesiDB
 
 
 class Database:
-    """Veritabanı yönetim sınıfı - SQLite ve MySQL desteği - Tüm modülleri birleştirir"""
-    
-    def __init__(self, db_path: str = "on_muhasebe.db", database_url: str = None):
+    """Veritabanı yönetim sınıfı - MySQL - Tüm modülleri birleştirir"""
+
+    def __init__(self, database_url: str):
         """
-        Veritabanı bağlantısı oluştur
-        
-        Args:
-            db_path: SQLite veritabanı dosya yolu (SQLite için)
-            database_url: MySQL connection string (MySQL için)
+        MySQL bağlantısı. database_url zorunludur.
         """
-        self.db_conn = DatabaseConnection(db_path=db_path, database_url=database_url)
-        
-        # Veritabanı tablolarını oluştur
+        self.db_conn = DatabaseConnection(database_url=database_url)
+
         try:
-            print(f"🔄 Veritabanı başlatılıyor... (MySQL: {self.db_conn.is_mysql})")
+            print("🔄 Veritabanı başlatılıyor (MySQL)...")
             self.db_conn.init_database()
-            print("✅ Veritabanı tabloları hazır!")
         except Exception as e:
-            print(f"❌ Veritabanı başlatma hatası: {e}")
+            print(f"❌ Veritabanı hatası: {e}")
             import traceback
             traceback.print_exc()
             # Hata olsa bile devam et, belki tablolar zaten var

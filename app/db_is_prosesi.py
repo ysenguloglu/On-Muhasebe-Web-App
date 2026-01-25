@@ -29,15 +29,13 @@ class IsProsesiDB:
             cursor.execute(query, (proses_adi, proses_tipi_val, aciklama_val))
             conn.commit()
             
-            # Oluşturulan ID'yi al
             proses_id = cursor.lastrowid if hasattr(cursor, 'lastrowid') else None
-            if not proses_id and self.db.is_mysql:
-                # MySQL için son eklenen ID'yi al
+            if not proses_id:
                 cursor.execute("SELECT LAST_INSERT_ID()")
                 result = cursor.fetchone()
                 if result:
-                    proses_id = result['LAST_INSERT_ID()'] if isinstance(result, dict) else result[0]
-            
+                    proses_id = result.get('LAST_INSERT_ID()') or (result[0] if isinstance(result, (list, tuple)) else None)
+
             return (True, "İş prosesi başarıyla kaydedildi", proses_id)
         except Exception as e:
             hata_mesaji = f"Veritabanı hatası: {str(e)}"
@@ -58,12 +56,8 @@ class IsProsesiDB:
         cursor.execute("SELECT * FROM is_prosesi ORDER BY olusturma_tarihi DESC")
         rows = cursor.fetchall()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return list(rows)  # Zaten dictionary listesi
-        else:
-            return [dict(row) for row in rows]  # SQLite Row objesini dict'e çevir
-    
+        return list(rows)
+
     def is_prosesi_getir(self, proses_id: int) -> Optional[Dict]:
         """ID ile iş prosesi getir"""
         conn = self.db.connect()
@@ -73,12 +67,8 @@ class IsProsesiDB:
         cursor.execute(query, (proses_id,))
         row = cursor.fetchone()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return row if row else None
-        else:
-            return dict(row) if row else None
-    
+        return row if row else None
+
     def is_prosesi_guncelle(self, proses_id: int, proses_adi: str, aciklama: str = "", proses_tipi: Optional[str] = None) -> tuple[bool, str]:
         """İş prosesi güncelle. proses_tipi: Söküm, Temizlik, Revizyon, Montaj"""
         conn = None
@@ -166,14 +156,13 @@ class IsProsesiDB:
             cursor.execute(query, (proses_id, sira_no, madde_adi, aciklama_val))
             conn.commit()
             
-            # Oluşturulan ID'yi al
             madde_id = cursor.lastrowid if hasattr(cursor, 'lastrowid') else None
-            if not madde_id and self.db.is_mysql:
+            if not madde_id:
                 cursor.execute("SELECT LAST_INSERT_ID()")
                 result = cursor.fetchone()
                 if result:
-                    madde_id = result['LAST_INSERT_ID()'] if isinstance(result, dict) else result[0]
-            
+                    madde_id = result.get('LAST_INSERT_ID()') or (result[0] if isinstance(result, (list, tuple)) else None)
+
             return (True, "Proses maddesi başarıyla kaydedildi", madde_id)
         except Exception as e:
             hata_mesaji = f"Veritabanı hatası: {str(e)}"
@@ -196,12 +185,8 @@ class IsProsesiDB:
         cursor.execute(query, (proses_id,))
         rows = cursor.fetchall()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return list(rows)  # Zaten dictionary listesi
-        else:
-            return [dict(row) for row in rows]  # SQLite Row objesini dict'e çevir
-    
+        return list(rows)
+
     def is_prosesi_madde_guncelle(self, madde_id: int, sira_no: int, madde_adi: str, 
                                    aciklama: str = "", tamamlandi: bool = False) -> tuple[bool, str]:
         """Proses maddesi güncelle"""
@@ -221,18 +206,9 @@ class IsProsesiDB:
             
             aciklama_val = aciklama if aciklama else None
             
-            # Tamamlanma tarihi
-            if tamamlandi:
-                if self.db.is_mysql:
-                    tamamlanma_tarihi = "CURRENT_TIMESTAMP"
-                else:
-                    tamamlanma_tarihi = "datetime('now')"
-            else:
-                tamamlanma_tarihi = None
-            
-            # Boolean değeri dönüştür (SQLite için 0/1, MySQL için True/False)
-            tamamlandi_val = 1 if tamamlandi else 0 if not self.db.is_mysql else tamamlandi
-            
+            tamamlanma_tarihi = "CURRENT_TIMESTAMP" if tamamlandi else None
+            tamamlandi_val = tamamlandi
+
             if tamamlanma_tarihi:
                 query = """
                     UPDATE is_prosesi_maddeleri 
@@ -295,30 +271,20 @@ class IsProsesiDB:
         try:
             conn = self.db.connect()
             cursor = self.db._get_cursor(conn)
-            
-            # Boolean değeri dönüştür
-            tamamlandi_val = 1 if tamamlandi else 0 if not self.db.is_mysql else tamamlandi
-            
+            tamamlandi_val = tamamlandi
+
             if tamamlandi:
-                if self.db.is_mysql:
-                    query = """
-                        UPDATE is_prosesi_maddeleri 
-                        SET tamamlandi = ?, tamamlanma_tarihi = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    """
-                else:
-                    query = """
-                        UPDATE is_prosesi_maddeleri 
-                        SET tamamlandi = ?, tamamlanma_tarihi = datetime('now')
-                        WHERE id = ?
-                    """
+                query = """
+                    UPDATE is_prosesi_maddeleri 
+                    SET tamamlandi = %s, tamamlanma_tarihi = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                """
             else:
                 query = """
                     UPDATE is_prosesi_maddeleri 
-                    SET tamamlandi = ?, tamamlanma_tarihi = NULL
-                    WHERE id = ?
+                    SET tamamlandi = %s, tamamlanma_tarihi = NULL
+                    WHERE id = %s
                 """
-            query = self.db._convert_placeholders(query)
             cursor.execute(query, (tamamlandi_val, madde_id))
             conn.commit()
             

@@ -94,12 +94,8 @@ class StokDB:
         
         rows = cursor.fetchall()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return list(rows)  # Zaten dictionary listesi
-        else:
-            return [dict(row) for row in rows]  # SQLite Row objesini dict'e çevir
-    
+        return list(rows)
+
     def stok_getir(self, stok_id: int) -> Optional[Dict]:
         """Belirli bir ürünü getir"""
         conn = self.db.connect()
@@ -109,12 +105,8 @@ class StokDB:
         cursor.execute(query, (stok_id,))
         row = cursor.fetchone()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return row if row else None
-        else:
-            return dict(row) if row else None
-    
+        return row if row else None
+
     def stok_urun_adi_ile_ara(self, urun_adi: str) -> Optional[Dict]:
         """Ürün adı ile ürün ara"""
         conn = self.db.connect()
@@ -124,12 +116,8 @@ class StokDB:
         cursor.execute(query, (urun_adi,))
         row = cursor.fetchone()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return row if row else None
-        else:
-            return dict(row) if row else None
-    
+        return row if row else None
+
     def stok_urun_kodu_ile_ara(self, urun_kodu: str) -> Optional[Dict]:
         """Ürün kodu ile ürün ara"""
         if not urun_kodu or not urun_kodu.strip():
@@ -141,12 +129,8 @@ class StokDB:
         cursor.execute(query, (urun_kodu.strip(),))
         row = cursor.fetchone()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return row if row else None
-        else:
-            return dict(row) if row else None
-    
+        return row if row else None
+
     def stok_miktar_azalt(self, urun_kodu: str, miktar: float) -> Tuple[bool, str]:
         """Ürün koduna göre stok miktarını azalt"""
         if not urun_kodu or not urun_kodu.strip():
@@ -165,12 +149,10 @@ class StokDB:
                 self.db.close()
                 return (False, f"Ürün kodu '{urun_kodu}' stokta bulunamadı")
             
-            # MySQL'de DictCursor kullanıldığı için dict erişimi, SQLite'da Row objesi
-            if self.db.is_mysql:
-                stok_id, mevcut_miktar, urun_adi = row['id'], row['stok_miktari'], row['urun_adi']
-            else:
-                stok_id, mevcut_miktar, urun_adi = row[0], row[1], row[2]
-            
+            stok_id = row['id']
+            mevcut_miktar = row['stok_miktari']
+            urun_adi = row['urun_adi']
+
             if mevcut_miktar < miktar:
                 self.db.close()
                 return (False, f"Yetersiz stok! Mevcut: {mevcut_miktar}, İstenen: {miktar} (Ürün: {urun_adi})")
@@ -230,12 +212,10 @@ class StokDB:
                     hata_mesajlari.append(f"{urun_adi} ({urun_kodu}): Stokta bulunamadı")
                     continue
                 
-                # MySQL'de DictCursor kullanıldığı için dict erişimi, SQLite'da Row objesi
-                if self.db.is_mysql:
-                    stok_id, mevcut_miktar, db_urun_adi = row['id'], row['stok_miktari'], row['urun_adi']
-                else:
-                    stok_id, mevcut_miktar, db_urun_adi = row[0], row[1], row[2]
-                
+                stok_id = row['id']
+                mevcut_miktar = row['stok_miktari']
+                db_urun_adi = row['urun_adi']
+
                 if mevcut_miktar < miktar:
                     hata_mesajlari.append(f"{db_urun_adi} ({urun_kodu}): Yetersiz stok! Mevcut: {mevcut_miktar}, İstenen: {miktar}")
                     continue

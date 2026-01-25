@@ -68,12 +68,8 @@ class IsEvrakiDB:
         cursor.execute("SELECT * FROM is_evraki ORDER BY olusturma_tarihi DESC")
         rows = cursor.fetchall()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return list(rows)  # Zaten dictionary listesi
-        else:
-            return [dict(row) for row in rows]  # SQLite Row objesini dict'e çevir
-    
+        return list(rows)
+
     def is_evraki_getir(self, evrak_id: int) -> Dict:
         """ID ile iş evrakı getir"""
         conn = self.db.connect()
@@ -83,12 +79,8 @@ class IsEvrakiDB:
         cursor.execute(query, (evrak_id,))
         row = cursor.fetchone()
         self.db.close()
-        # MySQL'de DictCursor kullanıldığı için row zaten dict, SQLite'da Row objesi
-        if self.db.is_mysql:
-            return row if row else None
-        else:
-            return dict(row) if row else None
-    
+        return row if row else None
+
     def is_evraki_guncelle(self, evrak_id: int, is_emri_no: int, tarih: str, musteri_unvan: str,
                            telefon: str = "", arac_plakasi: str = "", cekici_dorse: str = "",
                            marka_model: str = "", talep_edilen_isler: str = "",
@@ -186,15 +178,9 @@ class IsEvrakiDB:
         cursor.execute("SELECT DISTINCT is_emri_no FROM is_evraki WHERE is_emri_no > 0 ORDER BY is_emri_no")
         rows = cursor.fetchall()
         self.db.close()
-        
-        # Kullanılan numaraları set'e çevir - MySQL ve SQLite için farklı erişim
-        if self.db.is_mysql:
-            # MySQL: DictCursor kullanıldığı için dict erişimi
-            kullanilan_nolar = {row['is_emri_no'] for row in rows}
-        else:
-            # SQLite: Normal cursor, index erişimi
-            kullanilan_nolar = {row[0] for row in rows}
-        
+
+        kullanilan_nolar = {row['is_emri_no'] for row in rows}
+
         # 1'den başlayarak ilk kullanılmayan numarayı bul
         for numara in range(1, 10000):  # Maksimum 9999'a kadar kontrol et
             if numara not in kullanilan_nolar:
