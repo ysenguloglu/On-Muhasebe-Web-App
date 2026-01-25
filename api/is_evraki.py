@@ -3,11 +3,29 @@
 """
 from fastapi import APIRouter, HTTPException
 import json
+from decimal import Decimal
+from datetime import date, datetime
+
 from models import IsEvrakiCreate, IsEvrakiCreateWithEmail, IsEvrakiUpdate, IsEvrakiUpdateWithEmail
 from api.pdf_email import pdf_olustur_api, email_gonder_api
 from db_instance import db
 
 router = APIRouter(prefix="/api/is-evraki", tags=["is-evraki"])
+
+
+def _evrak_json_serialize(obj):
+    """MySQL'den gelen Decimal, datetime gibi JSON'a uyumsuz tipleri dönüştür."""
+    if obj is None:
+        return None
+    if isinstance(obj, (list, tuple)):
+        return [_evrak_json_serialize(x) for x in obj]
+    if isinstance(obj, dict):
+        return {k: _evrak_json_serialize(v) for k, v in obj.items()}
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat() if obj else None
+    return obj
 
 
 @router.get("/sonraki-no")
@@ -25,6 +43,7 @@ async def is_evraki_listele():
     """List all work orders"""
     try:
         evraklar = db.is_evraki_listele()
+        evraklar = _evrak_json_serialize(evraklar)
         return {"success": True, "data": evraklar, "count": len(evraklar)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -37,6 +56,7 @@ async def is_evraki_getir(evrak_id: int):
         evrak = db.is_evraki_getir(evrak_id)
         if not evrak:
             raise HTTPException(status_code=404, detail="İş evrakı bulunamadı")
+        evrak = _evrak_json_serialize(evrak)
         return {"success": True, "data": evrak}
     except HTTPException:
         raise
@@ -168,20 +188,6 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
             "email_sent": email_sent
         }
         
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/{evrak_id}")
-async def is_evraki_getir(evrak_id: int):
-    """Get a specific work order by ID"""
-    try:
-        evrak = db.is_evraki_getir(evrak_id)
-        if not evrak:
-            raise HTTPException(status_code=404, detail="İş evrakı bulunamadı")
-        return {"success": True, "data": evrak}
     except HTTPException:
         raise
     except Exception as e:
