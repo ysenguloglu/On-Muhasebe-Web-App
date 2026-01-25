@@ -7,6 +7,7 @@ FastAPI ile geliştirilmiş, web tabanlı ön muhasebe uygulaması. Stok yöneti
 - **📦 Stok Yönetimi**: Ürün ekleme, düzenleme, silme, Excel'den içe/dışa aktarma
 - **👥 Cari Hesap Yönetimi**: Müşteri ve tedarikçi kayıtları, TC/VKN kontrolü
 - **📄 İş Evrakı**: İş emri oluşturma, PDF oluşturma ve e-posta gönderme
+- **📊 Aylık Rapor**: Müşteri sayısı, ciro ve ürün kullanım özeti — PDF olarak EMAIL_TO adresine aylık gönderim
 - **🌐 Web Arayüzü**: Modern, mobil uyumlu arayüz
 - **💾 Veritabanı**: MySQL
 
@@ -142,6 +143,23 @@ on-muhasebe-web/
 - **Stok Yönetimi**: `/stok`
 - **Cari Hesaplar**: `/cari`
 - **İş Evrakı**: `/is-evraki`
+
+### Aylık İş Evrakları Raporu (PDF)
+
+İş evraklarından müşteri sayısı, ciro ve ürün kullanım özetini PDF olarak **EMAIL_TO** adresine gönderir.
+
+**Otomatik gönderim (uygulama içi):**  
+`.env` içinde `AYLIK_RAPOR_OTOMATIK=1` (veya `true` / `yes`) tanımlayın. Uygulama her **ayın 1’i 09:00 (İstanbul)** bir önceki ayın raporunu otomatik oluşturup e‑posta ile gönderir. Ek cron / dış servis gerekmez.
+
+**Manuel veya dış cron:**
+- **Endpoint**: `POST /api/aylik-rapor/gonder`
+- **Parametreler** (opsiyonel): `?ay=1&yil=2025` — verilmezse önceki ay kullanılır.
+- **Dış cron güvenliği**: `CRON_SECRET` tanımlıysa `?secret=CRON_SECRET` veya `X-Cron-Secret` header’ı gerekir.
+
+Örnek (dış cron):
+```bash
+curl -X POST "https://your-app.onrender.com/api/aylik-rapor/gonder?secret=YOUR_CRON_SECRET"
+```
 
 ### API Dokümantasyonu
 

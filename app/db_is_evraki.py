@@ -169,6 +169,19 @@ class IsEvrakiDB:
         finally:
             self.db.close()
     
+    def is_evraki_aylik_getir(self, ay: int, yil: int) -> List[Dict]:
+        """Belirtilen ay ve yıla ait iş evraklarını getir. tarih formatı: Gün-Ay-Yıl"""
+        conn = self.db.connect()
+        cursor = self.db._get_cursor(conn)
+        # Örn: Ocak 2025 -> '%-1-2025'
+        pattern = f"%-{ay}-{yil}"
+        query = "SELECT * FROM is_evraki WHERE tarih LIKE ? ORDER BY tarih, is_emri_no"
+        query = self.db._convert_placeholders(query)
+        cursor.execute(query, (pattern,))
+        rows = cursor.fetchall()
+        self.db.close()
+        return list(rows)
+
     def is_emri_no_sonraki(self) -> int:
         """En küçük kullanılmayan pozitif iş emri numarasını döndür"""
         conn = self.db.connect()

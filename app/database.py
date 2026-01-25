@@ -111,6 +111,9 @@ class Database:
     
     def is_emri_no_sonraki(self, *args, **kwargs):
         return self.is_evraki.is_emri_no_sonraki(*args, **kwargs)
+
+    def is_evraki_aylik_getir(self, *args, **kwargs):
+        return self.is_evraki.is_evraki_aylik_getir(*args, **kwargs)
     
     # ========== İŞ PROSESİ İŞLEMLERİ (Delegasyon) ==========
     

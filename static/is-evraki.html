@@ -205,7 +205,8 @@
                 padding: 14px;
                 font-size: 16px;
             }
-            table {
+            /* Sadece evrak listesi tablosunu gizle (mobilde kartlar gösterilir); detay modaldaki ürünler tablosu görünür kalsın */
+            #evrakTable {
                 display: none;
             }
             .evrak-card {
@@ -296,6 +297,7 @@
                 margin: 10px !important;
                 padding: 20px !important;
                 max-height: calc(100vh - 20px) !important;
+                overflow: auto !important; /* Yatay kaydırma: kullanılan ürünler tablosu mobilde görünsün */
             }
             #evrakDetayModal h2 {
                 font-size: 1.2em !important;
@@ -882,15 +884,15 @@
                         }
                     }
                     
-                    // Ürünler tablosu HTML'i
+                    // Ürünler tablosu HTML'i (mobilde yatay kaydırma için overflow-x: auto wrapper)
                     let urunTabloHtml = '';
                     if (urunler && urunler.length > 0) {
-                        urunTabloHtml = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr style="background-color: #667eea; color: white;"><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Ürün Kodu</th><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Ürün Adı</th><th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Adet</th><th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Birim Fiyat</th><th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Toplam</th></tr></thead><tbody>';
+                        urunTabloHtml = '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px;"><table class="urunler-tablosu" style="width: 100%; min-width: 320px; border-collapse: collapse;"><thead><tr style="background-color: #667eea; color: white;"><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Ürün Kodu</th><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Ürün Adı</th><th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Adet</th><th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Birim Fiyat</th><th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Toplam</th></tr></thead><tbody>';
                         urunler.forEach(urun => {
-                            urunTabloHtml += `<tr><td style="padding: 6px; border: 1px solid #ddd;">${urun.urun_kodu || '-'}</td><td style="padding: 6px; border: 1px solid #ddd;">${urun.urun_adi}</td><td style="padding: 6px; border: 1px solid #ddd; text-align: center;">${urun.adet}</td><td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${urun.birim_fiyat.toFixed(2)} ₺</td><td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${urun.toplam.toFixed(2)} ₺</td></tr>`;
+                            urunTabloHtml += `<tr><td style="padding: 6px; border: 1px solid #ddd;">${urun.urun_kodu || '-'}</td><td style="padding: 6px; border: 1px solid #ddd;">${urun.urun_adi}</td><td style="padding: 6px; border: 1px solid #ddd; text-align: center;">${urun.adet}</td><td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${(urun.birim_fiyat || 0).toFixed(2)} ₺</td><td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${(urun.toplam || 0).toFixed(2)} ₺</td></tr>`;
                         });
-                        const toplam = urunler.reduce((sum, u) => sum + u.toplam, 0);
-                        urunTabloHtml += `<tr style="background-color: #f0f0f0; font-weight: bold;"><td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">TOPLAM:</td><td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${toplam.toFixed(2)} ₺</td></tr></tbody></table>`;
+                        const toplam = urunler.reduce((sum, u) => sum + (u.toplam || 0), 0);
+                        urunTabloHtml += `<tr style="background-color: #f0f0f0; font-weight: bold;"><td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">TOPLAM:</td><td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${toplam.toFixed(2)} ₺</td></tr></tbody></table></div>';
                     } else {
                         urunTabloHtml = '<p style="color: #999; font-style: italic;">Kullanılan ürün bulunmamaktadır.</p>';
                     }
