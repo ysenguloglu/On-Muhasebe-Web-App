@@ -237,6 +237,7 @@ class DatabaseConnection:
                         CREATE TABLE IF NOT EXISTS is_prosesi (
                             id INT AUTO_INCREMENT PRIMARY KEY,
                             proses_adi VARCHAR(255) NOT NULL,
+                            proses_tipi VARCHAR(50) NULL,
                             aciklama TEXT,
                             olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -246,6 +247,14 @@ class DatabaseConnection:
                 except Exception as e:
                     conn.rollback()
                     print(f"⚠️ İş prosesi tablosu oluşturma hatası (devam ediliyor): {e}")
+
+                # Migration: is_prosesi.proses_tipi (Söküm, Temizlik, Revizyon, Montaj)
+                try:
+                    cursor.execute("ALTER TABLE is_prosesi ADD COLUMN proses_tipi VARCHAR(50) NULL")
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+                    pass
                 
                 try:
                     # İş prosesi maddeleri tablosu
@@ -355,6 +364,7 @@ class DatabaseConnection:
                     CREATE TABLE IF NOT EXISTS is_prosesi (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         proses_adi TEXT NOT NULL,
+                        proses_tipi TEXT,
                         aciklama TEXT,
                         olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -396,6 +406,12 @@ class DatabaseConnection:
                 try:
                     cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi TEXT DEFAULT 'Şahıs'")
                     cursor.execute("UPDATE cari SET firma_tipi = 'Şahıs' WHERE firma_tipi IS NULL")
+                except sqlite3.OperationalError:
+                    pass
+
+                # Migration: is_prosesi.proses_tipi (Söküm, Temizlik, Revizyon, Montaj)
+                try:
+                    cursor.execute("ALTER TABLE is_prosesi ADD COLUMN proses_tipi TEXT")
                 except sqlite3.OperationalError:
                     pass
             

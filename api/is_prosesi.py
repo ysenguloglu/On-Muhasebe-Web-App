@@ -47,7 +47,8 @@ async def is_prosesi_ekle(proses: IsProsesiCreate):
     try:
         success, message, proses_id = db.is_prosesi_ekle(
             proses_adi=proses.proses_adi,
-            aciklama=proses.aciklama or ""
+            aciklama=proses.aciklama or "",
+            proses_tipi=proses.proses_tipi or None
         )
         
         if not success:
@@ -83,7 +84,8 @@ async def is_prosesi_guncelle(proses_id: int, proses: IsProsesiUpdate):
         success, message = db.is_prosesi_guncelle(
             proses_id=proses_id,
             proses_adi=proses.proses_adi,
-            aciklama=proses.aciklama or ""
+            aciklama=proses.aciklama or "",
+            proses_tipi=proses.proses_tipi or None
         )
         
         if not success:

@@ -48,12 +48,23 @@
             color: #333;
             font-weight: 500;
         }
-        input, textarea {
+        input, textarea, select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 14px;
+        }
+        select {
+            cursor: pointer;
+            background: white;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
         }
         textarea {
             resize: vertical;
@@ -333,8 +344,8 @@
             textarea {
                 font-size: 16px; /* iOS zoom önleme */
             }
-            input {
-                font-size: 16px; /* iOS zoom önleme */
+            input, select {
+                font-size: 16px; /* iOS zoom önleme, native picker için uygun */
             }
             /* Modal mobil iyileştirmeleri */
             #prosesDetayModal > div {
@@ -372,6 +383,17 @@
                 <div class="form-group">
                     <label for="prosesAdi">Proses Adı *</label>
                     <input type="text" id="prosesAdi" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prosesTipi">Proses Tipi</label>
+                    <select id="prosesTipi">
+                        <option value="">— Seçiniz —</option>
+                        <option value="Söküm">Söküm</option>
+                        <option value="Temizlik">Temizlik</option>
+                        <option value="Revizyon">Revizyon</option>
+                        <option value="Montaj">Montaj</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -435,6 +457,7 @@
             e.preventDefault();
             
             const prosesAdi = document.getElementById('prosesAdi').value;
+            const prosesTipi = document.getElementById('prosesTipi').value || null;
             const prosesAciklama = document.getElementById('prosesAciklama').value;
             const maddeler = mevcutMaddeler.filter(m => m.madde_adi.trim() !== '');
 
@@ -446,6 +469,7 @@
             try {
                 const prosesData = {
                     proses_adi: prosesAdi,
+                    proses_tipi: prosesTipi,
                     aciklama: prosesAciklama,
                     maddeler: maddeler.map((m, index) => ({
                         sira_no: m.sira_no || (index + 1),
@@ -462,6 +486,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             proses_adi: prosesAdi,
+                            proses_tipi: prosesTipi,
                             aciklama: prosesAciklama
                         })
                     });
@@ -560,16 +585,18 @@
             }
 
             // Masaüstü için tablo
-            let html = '<table><thead><tr><th>Proses Adı</th><th>Açıklama</th><th>Madde Sayısı</th><th>Oluşturma Tarihi</th><th>İşlemler</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Proses Adı</th><th>Proses Tipi</th><th>Açıklama</th><th>Madde Sayısı</th><th>Oluşturma Tarihi</th><th>İşlemler</th></tr></thead><tbody>';
             
             prosesler.forEach(proses => {
                 const maddeler = proses.maddeler || [];
                 const toplamSayi = maddeler.length;
                 const olusturmaTarihi = new Date(proses.olusturma_tarihi).toLocaleDateString('tr-TR');
+                const prosesTipi = proses.proses_tipi || '-';
                 
                 html += `
                     <tr>
                         <td><strong>${proses.proses_adi}</strong></td>
+                        <td>${prosesTipi}</td>
                         <td>${proses.aciklama || '-'}</td>
                         <td>${toplamSayi}</td>
                         <td>${olusturmaTarihi}</td>
@@ -595,11 +622,16 @@
                     
                     const card = document.createElement('div');
                     card.className = 'proses-card';
+                    const prosesTipi = proses.proses_tipi || '-';
                     card.innerHTML = `
                         <div class="proses-card-header">
                             <div class="proses-card-title">${proses.proses_adi}</div>
                         </div>
                         <div class="proses-card-body">
+                            <div class="proses-card-row">
+                                <span class="proses-card-label">Proses Tipi:</span>
+                                <span class="proses-card-value">${prosesTipi}</span>
+                            </div>
                             <div class="proses-card-row">
                                 <span class="proses-card-label">Açıklama:</span>
                                 <span class="proses-card-value">${proses.aciklama || '-'}</span>
@@ -667,9 +699,13 @@
                         });
                     }
                     
+                    const prosesTipi = proses.proses_tipi || '-';
                     content.innerHTML = `
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                             <div><strong>Proses Adı:</strong> ${proses.proses_adi || '-'}</div>
+                            <div><strong>Proses Tipi:</strong> ${prosesTipi}</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                             <div><strong>Oluşturma Tarihi:</strong> ${new Date(proses.olusturma_tarihi).toLocaleString('tr-TR')}</div>
                         </div>
                         <div style="margin-bottom: 15px;">
@@ -715,6 +751,7 @@
                     
                     document.getElementById('prosesId').value = proses.id;
                     document.getElementById('prosesAdi').value = proses.proses_adi;
+                    document.getElementById('prosesTipi').value = proses.proses_tipi || '';
                     document.getElementById('prosesAciklama').value = proses.aciklama || '';
                     
                     // Maddeleri yükle

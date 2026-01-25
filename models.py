@@ -151,14 +151,19 @@ class IsProsesiMaddeCreate(BaseModel):
     aciklama: Optional[str] = ""
 
 
+PROSES_TIPLERI = ("Söküm", "Temizlik", "Revizyon", "Montaj")
+
+
 class IsProsesiCreate(BaseModel):
     proses_adi: str
+    proses_tipi: Optional[str] = None  # Söküm, Temizlik, Revizyon, Montaj
     aciklama: Optional[str] = ""
     maddeler: Optional[List[IsProsesiMaddeCreate]] = []
 
 
 class IsProsesiUpdate(BaseModel):
     proses_adi: str
+    proses_tipi: Optional[str] = None  # Söküm, Temizlik, Revizyon, Montaj
     aciklama: Optional[str] = ""
 
 

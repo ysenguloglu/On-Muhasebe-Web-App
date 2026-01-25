@@ -11,21 +11,22 @@ class IsProsesiDB:
     def __init__(self, db_conn: DatabaseConnection):
         self.db = db_conn
     
-    def is_prosesi_ekle(self, proses_adi: str, aciklama: str = "") -> tuple[bool, str, Optional[int]]:
-        """Yeni iş prosesi ekle"""
+    def is_prosesi_ekle(self, proses_adi: str, aciklama: str = "", proses_tipi: Optional[str] = None) -> tuple[bool, str, Optional[int]]:
+        """Yeni iş prosesi ekle. proses_tipi: Söküm, Temizlik, Revizyon, Montaj"""
         conn = None
         try:
             conn = self.db.connect()
             cursor = self.db._get_cursor(conn)
             
             aciklama_val = aciklama if aciklama else None
+            proses_tipi_val = proses_tipi if proses_tipi else None
             
             query = """
-                INSERT INTO is_prosesi (proses_adi, aciklama)
-                VALUES (?, ?)
+                INSERT INTO is_prosesi (proses_adi, proses_tipi, aciklama)
+                VALUES (?, ?, ?)
             """
             query = self.db._convert_placeholders(query)
-            cursor.execute(query, (proses_adi, aciklama_val))
+            cursor.execute(query, (proses_adi, proses_tipi_val, aciklama_val))
             conn.commit()
             
             # Oluşturulan ID'yi al
@@ -78,8 +79,8 @@ class IsProsesiDB:
         else:
             return dict(row) if row else None
     
-    def is_prosesi_guncelle(self, proses_id: int, proses_adi: str, aciklama: str = "") -> tuple[bool, str]:
-        """İş prosesi güncelle"""
+    def is_prosesi_guncelle(self, proses_id: int, proses_adi: str, aciklama: str = "", proses_tipi: Optional[str] = None) -> tuple[bool, str]:
+        """İş prosesi güncelle. proses_tipi: Söküm, Temizlik, Revizyon, Montaj"""
         conn = None
         try:
             conn = self.db.connect()
@@ -95,14 +96,15 @@ class IsProsesiDB:
                 return (False, "İş prosesi bulunamadı")
             
             aciklama_val = aciklama if aciklama else None
+            proses_tipi_val = proses_tipi if proses_tipi else None
             
             query = """
                 UPDATE is_prosesi 
-                SET proses_adi = ?, aciklama = ?
+                SET proses_adi = ?, proses_tipi = ?, aciklama = ?
                 WHERE id = ?
             """
             query = self.db._convert_placeholders(query)
-            cursor.execute(query, (proses_adi, aciklama_val, proses_id))
+            cursor.execute(query, (proses_adi, proses_tipi_val, aciklama_val, proses_id))
             conn.commit()
             
             return (True, "İş prosesi başarıyla güncellendi")
