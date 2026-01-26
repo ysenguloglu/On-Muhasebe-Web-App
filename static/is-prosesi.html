@@ -474,7 +474,8 @@
                     maddeler: maddeler.map((m, index) => ({
                         sira_no: m.sira_no || (index + 1),
                         madde_adi: m.madde_adi,
-                        aciklama: m.aciklama || ''
+                        aciklama: m.aciklama || '',
+                        kullanilan_malzemeler: m.kullanilan_malzemeler || ''
                     }))
                 };
 
@@ -510,6 +511,7 @@
                                         sira_no: madde.sira_no || (i + 1),
                                         madde_adi: madde.madde_adi,
                                         aciklama: madde.aciklama || '',
+                                        kullanilan_malzemeler: madde.kullanilan_malzemeler || '',
                                         tamamlandi: madde.tamamlandi || false
                                     })
                                 });
@@ -521,7 +523,8 @@
                                     body: JSON.stringify({
                                         sira_no: madde.sira_no || (i + 1),
                                         madde_adi: madde.madde_adi,
-                                        aciklama: madde.aciklama || ''
+                                        aciklama: madde.aciklama || '',
+                                        kullanilan_malzemeler: madde.kullanilan_malzemeler || ''
                                     })
                                 });
                             }
@@ -688,14 +691,15 @@
                         maddelerHtml = '<p style="color: #999; font-style: italic; padding: 20px; text-align: center;">Henüz madde eklenmemiş.</p>';
                     } else {
                         maddeler.forEach(madde => {
-                            maddelerHtml += `
-                                <div style="background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #667eea;">
-                                    <div style="font-weight: 600; color: #333; margin-bottom: 5px;">
-                                        ${madde.sira_no}. ${madde.madde_adi}
-                                    </div>
-                                    ${madde.aciklama ? `<div style="color: #666; font-size: 14px; margin-top: 5px;">${madde.aciklama}</div>` : ''}
-                                </div>
-                            `;
+                            maddelerHtml += '<div style="background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #667eea;">';
+                            maddelerHtml += '<div style="font-weight: 600; color: #333; margin-bottom: 5px;">' + madde.sira_no + '. ' + (madde.madde_adi || '') + '</div>';
+                            if (madde.aciklama) {
+                                maddelerHtml += '<div style="color: #666; font-size: 14px; margin-top: 5px;"><strong>Açıklama:</strong> ' + madde.aciklama + '</div>';
+                            }
+                            if (madde.kullanilan_malzemeler) {
+                                maddelerHtml += '<div style="color: #667eea; font-size: 14px; margin-top: 8px;"><strong>Takımlar:</strong> ' + madde.kullanilan_malzemeler + '</div>';
+                            }
+                            maddelerHtml += '</div>';
                         });
                     }
                     
@@ -760,6 +764,7 @@
                         sira_no: m.sira_no,
                         madde_adi: m.madde_adi,
                         aciklama: m.aciklama || '',
+                        kullanilan_malzemeler: m.kullanilan_malzemeler || '',
                         tamamlandi: m.tamamlandi || false
                     }));
                     
@@ -812,6 +817,7 @@
                 sira_no: mevcutMaddeler.length + 1,
                 madde_adi: '',
                 aciklama: '',
+                kullanilan_malzemeler: '',
                 tamamlandi: false
             });
             maddeleriGoster();
@@ -838,8 +844,14 @@
                             <button type="button" onclick="maddeSil(${index})" class="btn-danger">Sil</button>
                         </div>
                         <div class="form-group">
-                            <textarea placeholder="Açıklama (opsiyonel)" 
+                            <label style="font-size: 13px; color: #666; margin-bottom: 5px;">Açıklama (opsiyonel)</label>
+                            <textarea placeholder="Açıklama..." 
                                       onchange="maddeGuncelle(${index}, 'aciklama', this.value)">${madde.aciklama || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 13px; color: #666; margin-bottom: 5px;">Takımlar (opsiyonel)</label>
+                            <textarea placeholder="Takımları buraya yazın..." 
+                                      onchange="maddeGuncelle(${index}, 'kullanilan_malzemeler', this.value)">${madde.kullanilan_malzemeler || ''}</textarea>
                         </div>
                     </div>
                 `;

@@ -201,6 +201,7 @@ class DatabaseConnection:
                         sira_no INT NOT NULL,
                         madde_adi VARCHAR(255) NOT NULL,
                         aciklama TEXT,
+                        kullanilan_malzemeler TEXT,
                         tamamlandi BOOLEAN DEFAULT FALSE,
                         tamamlanma_tarihi TIMESTAMP NULL,
                         olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -211,6 +212,14 @@ class DatabaseConnection:
             except Exception as e:
                 conn.rollback()
                 print(f"⚠️ İş prosesi maddeleri (devam): {e}")
+
+            # kullanilan_malzemeler kolonunu ekle (eğer yoksa)
+            try:
+                cursor.execute("ALTER TABLE is_prosesi_maddeleri ADD COLUMN kullanilan_malzemeler TEXT")
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                # Kolon zaten varsa hata vermez, devam eder
 
             try:
                 cursor.execute("ALTER TABLE cari ADD COLUMN firma_tipi VARCHAR(50) DEFAULT 'Şahıs'")

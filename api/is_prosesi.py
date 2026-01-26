@@ -61,7 +61,8 @@ async def is_prosesi_ekle(proses: IsProsesiCreate):
                     proses_id=proses_id,
                     sira_no=madde.sira_no,
                     madde_adi=madde.madde_adi,
-                    aciklama=madde.aciklama or ""
+                    aciklama=madde.aciklama or "",
+                    kullanilan_malzemeler=madde.kullanilan_malzemeler or ""
                 )
         
         # Oluşturulan prosesi getir
@@ -141,7 +142,8 @@ async def is_prosesi_madde_ekle(proses_id: int, madde: IsProsesiMaddeCreate):
             proses_id=proses_id,
             sira_no=madde.sira_no,
             madde_adi=madde.madde_adi,
-            aciklama=madde.aciklama or ""
+            aciklama=madde.aciklama or "",
+            kullanilan_malzemeler=madde.kullanilan_malzemeler or ""
         )
         
         if not success:
@@ -163,6 +165,7 @@ async def is_prosesi_madde_guncelle(madde_id: int, madde: IsProsesiMaddeUpdate):
             sira_no=madde.sira_no,
             madde_adi=madde.madde_adi,
             aciklama=madde.aciklama or "",
+            kullanilan_malzemeler=madde.kullanilan_malzemeler or "",
             tamamlandi=madde.tamamlandi or False
         )
         

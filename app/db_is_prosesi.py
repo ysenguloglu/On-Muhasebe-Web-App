@@ -139,7 +139,7 @@ class IsProsesiDB:
     
     # ========== PROSES MADDELERİ İŞLEMLERİ ==========
     
-    def is_prosesi_madde_ekle(self, proses_id: int, sira_no: int, madde_adi: str, aciklama: str = "") -> tuple[bool, str, Optional[int]]:
+    def is_prosesi_madde_ekle(self, proses_id: int, sira_no: int, madde_adi: str, aciklama: str = "", kullanilan_malzemeler: str = "") -> tuple[bool, str, Optional[int]]:
         """Yeni proses maddesi ekle"""
         conn = None
         try:
@@ -147,13 +147,14 @@ class IsProsesiDB:
             cursor = self.db._get_cursor(conn)
             
             aciklama_val = aciklama if aciklama else None
+            kullanilan_malzemeler_val = kullanilan_malzemeler if kullanilan_malzemeler else None
             
             query = """
-                INSERT INTO is_prosesi_maddeleri (proses_id, sira_no, madde_adi, aciklama)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO is_prosesi_maddeleri (proses_id, sira_no, madde_adi, aciklama, kullanilan_malzemeler)
+                VALUES (?, ?, ?, ?, ?)
             """
             query = self.db._convert_placeholders(query)
-            cursor.execute(query, (proses_id, sira_no, madde_adi, aciklama_val))
+            cursor.execute(query, (proses_id, sira_no, madde_adi, aciklama_val, kullanilan_malzemeler_val))
             conn.commit()
             
             madde_id = cursor.lastrowid if hasattr(cursor, 'lastrowid') else None
@@ -188,7 +189,7 @@ class IsProsesiDB:
         return list(rows)
 
     def is_prosesi_madde_guncelle(self, madde_id: int, sira_no: int, madde_adi: str, 
-                                   aciklama: str = "", tamamlandi: bool = False) -> tuple[bool, str]:
+                                   aciklama: str = "", kullanilan_malzemeler: str = "", tamamlandi: bool = False) -> tuple[bool, str]:
         """Proses maddesi güncelle"""
         conn = None
         try:
@@ -205,6 +206,7 @@ class IsProsesiDB:
                 return (False, "Proses maddesi bulunamadı")
             
             aciklama_val = aciklama if aciklama else None
+            kullanilan_malzemeler_val = kullanilan_malzemeler if kullanilan_malzemeler else None
             
             tamamlanma_tarihi = "CURRENT_TIMESTAMP" if tamamlandi else None
             tamamlandi_val = tamamlandi
@@ -212,17 +214,17 @@ class IsProsesiDB:
             if tamamlanma_tarihi:
                 query = """
                     UPDATE is_prosesi_maddeleri 
-                    SET sira_no = ?, madde_adi = ?, aciklama = ?, tamamlandi = ?, tamamlanma_tarihi = {}
+                    SET sira_no = ?, madde_adi = ?, aciklama = ?, kullanilan_malzemeler = ?, tamamlandi = ?, tamamlanma_tarihi = {}
                     WHERE id = ?
                 """.format(tamamlanma_tarihi)
             else:
                 query = """
                     UPDATE is_prosesi_maddeleri 
-                    SET sira_no = ?, madde_adi = ?, aciklama = ?, tamamlandi = ?, tamamlanma_tarihi = NULL
+                    SET sira_no = ?, madde_adi = ?, aciklama = ?, kullanilan_malzemeler = ?, tamamlandi = ?, tamamlanma_tarihi = NULL
                     WHERE id = ?
                 """
             query = self.db._convert_placeholders(query)
-            cursor.execute(query, (sira_no, madde_adi, aciklama_val, tamamlandi_val, madde_id))
+            cursor.execute(query, (sira_no, madde_adi, aciklama_val, kullanilan_malzemeler_val, tamamlandi_val, madde_id))
             conn.commit()
             
             return (True, "Proses maddesi başarıyla güncellendi")

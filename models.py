@@ -149,6 +149,7 @@ class IsProsesiMaddeCreate(BaseModel):
     sira_no: int
     madde_adi: str
     aciklama: Optional[str] = ""
+    kullanilan_malzemeler: Optional[str] = ""
 
 
 PROSES_TIPLERI = ("Söküm", "Temizlik", "Revizyon", "Montaj")
@@ -171,4 +172,5 @@ class IsProsesiMaddeUpdate(BaseModel):
     sira_no: int
     madde_adi: str
     aciklama: Optional[str] = ""
+    kullanilan_malzemeler: Optional[str] = ""
     tamamlandi: Optional[bool] = False
