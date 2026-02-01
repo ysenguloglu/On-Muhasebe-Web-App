@@ -12,6 +12,43 @@ from db_instance import db
 
 router = APIRouter(prefix="/api/is-evraki", tags=["is-evraki"])
 
+# Türkçe başlık formatı: İlk harf büyük, diğerleri küçük (İşçilik, İŞÇİLİK -> İşçilik)
+_TR_UPPER = {'i': 'İ', 'ı': 'I'}
+_TR_LOWER = {'I': 'ı', 'İ': 'i'}
+
+
+def _turkish_title(s: str) -> str:
+    """Metni Türkçe başlık formatına getirir (ilk harf büyük, diğerleri küçük)."""
+    if not s or not isinstance(s, str):
+        return s
+    s = s.strip()
+    if not s:
+        return s
+    first = s[0]
+    first_upper = _TR_UPPER.get(first, first.upper())
+    rest = "".join(_TR_LOWER.get(c, c.lower()) for c in s[1:])
+    return first_upper + rest
+
+
+def _normalize_kullanilan_urunler(kullanilan_urunler: str) -> str:
+    """kullanilan_urunler JSON içindeki urun_adi ve urun_kodu alanlarını Türkçe başlık formatına getirir."""
+    if not kullanilan_urunler or not kullanilan_urunler.strip():
+        return kullanilan_urunler
+    try:
+        urunler = json.loads(kullanilan_urunler)
+    except Exception:
+        return kullanilan_urunler
+    if not isinstance(urunler, list):
+        return kullanilan_urunler
+    for u in urunler:
+        if not isinstance(u, dict):
+            continue
+        if "urun_adi" in u and u["urun_adi"]:
+            u["urun_adi"] = _turkish_title(str(u["urun_adi"]).strip())
+        if "urun_kodu" in u and u["urun_kodu"]:
+            u["urun_kodu"] = _turkish_title(str(u["urun_kodu"]).strip())
+    return json.dumps(urunler, ensure_ascii=False)
+
 
 def _evrak_json_serialize(obj):
     """MySQL'den gelen Decimal, datetime gibi JSON'a uyumsuz tipleri dönüştür."""
@@ -70,12 +107,12 @@ async def is_evraki_ekle(evrak: IsEvrakiCreate):
     try:
         if not evrak.musteri_unvan:
             raise HTTPException(status_code=400, detail="Müşteri ünvanı zorunludur")
-        
+        kullanilan_urunler_norm = _normalize_kullanilan_urunler(evrak.kullanilan_urunler or "")
         basarili, mesaj = db.is_evraki_ekle(
             evrak.is_emri_no, evrak.tarih, evrak.musteri_unvan, evrak.telefon,
             evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
             evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
-            evrak.baslama_saati, evrak.bitis_saati, evrak.kullanilan_urunler,
+            evrak.baslama_saati, evrak.bitis_saati, kullanilan_urunler_norm,
             evrak.toplam_tutar, evrak.tc_kimlik_no
         )
         
@@ -97,15 +134,14 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
     try:
         if not evrak.musteri_unvan:
             raise HTTPException(status_code=400, detail="Müşteri ünvanı zorunludur")
-        
-        # Kullanılan ürünleri parse et
+        kullanilan_urunler_norm = _normalize_kullanilan_urunler(evrak.kullanilan_urunler or "")
+        # Kullanılan ürünleri parse et (normalize edilmiş JSON'dan)
         urunler = []
-        if evrak.kullanilan_urunler:
+        if kullanilan_urunler_norm:
             try:
-                urunler = json.loads(evrak.kullanilan_urunler)
-            except:
+                urunler = json.loads(kullanilan_urunler_norm)
+            except Exception:
                 pass
-        
         # Stok miktarlarını azalt
         stok_urunler_listesi = []
         for urun in urunler:
@@ -143,12 +179,12 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
             )
             cari_mesaji = mesaj
         
-        # İş evrakını veritabanına kaydet
+        # İş evrakını veritabanına kaydet (ürün adı/kodu normalize edilmiş)
         basarili, hata_mesaji = db.is_evraki_ekle(
             evrak.is_emri_no, evrak.tarih, evrak.musteri_unvan, evrak.telefon,
             evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
             evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
-            evrak.baslama_saati, evrak.bitis_saati, evrak.kullanilan_urunler,
+            evrak.baslama_saati, evrak.bitis_saati, kullanilan_urunler_norm,
             evrak.toplam_tutar, evrak.tc_kimlik_no
         )
         
@@ -200,12 +236,12 @@ async def is_evraki_guncelle(evrak_id: int, evrak: IsEvrakiUpdate):
     try:
         if not evrak.musteri_unvan:
             raise HTTPException(status_code=400, detail="Müşteri ünvanı zorunludur")
-        
+        kullanilan_urunler_norm = _normalize_kullanilan_urunler(evrak.kullanilan_urunler or "")
         basarili, mesaj = db.is_evraki_guncelle(
             evrak_id, evrak.is_emri_no, evrak.tarih, evrak.musteri_unvan, evrak.telefon,
             evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
             evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
-            evrak.baslama_saati, evrak.bitis_saati, evrak.kullanilan_urunler,
+            evrak.baslama_saati, evrak.bitis_saati, kullanilan_urunler_norm,
             evrak.toplam_tutar, evrak.tc_kimlik_no
         )
         
@@ -227,21 +263,20 @@ async def is_evraki_guncelle_ve_gonder(evrak_id: int, evrak: IsEvrakiUpdateWithE
     try:
         if not evrak.musteri_unvan:
             raise HTTPException(status_code=400, detail="Müşteri ünvanı zorunludur")
-        
-        # Kullanılan ürünleri parse et
+        kullanilan_urunler_norm = _normalize_kullanilan_urunler(evrak.kullanilan_urunler or "")
+        # Kullanılan ürünleri parse et (normalize edilmiş JSON'dan)
         urunler = []
-        if evrak.kullanilan_urunler:
+        if kullanilan_urunler_norm:
             try:
-                urunler = json.loads(evrak.kullanilan_urunler)
-            except:
+                urunler = json.loads(kullanilan_urunler_norm)
+            except Exception:
                 pass
-        
-        # İş evrakını veritabanında güncelle
+        # İş evrakını veritabanında güncelle (ürün adı/kodu normalize edilmiş)
         basarili, hata_mesaji = db.is_evraki_guncelle(
             evrak_id, evrak.is_emri_no, evrak.tarih, evrak.musteri_unvan, evrak.telefon,
             evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
             evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
-            evrak.baslama_saati, evrak.bitis_saati, evrak.kullanilan_urunler,
+            evrak.baslama_saati, evrak.bitis_saati, kullanilan_urunler_norm,
             evrak.toplam_tutar, evrak.tc_kimlik_no
         )
         
@@ -268,7 +303,7 @@ async def is_evraki_guncelle_ve_gonder(evrak_id: int, evrak: IsEvrakiUpdateWithE
                     yapilan_is=evrak.yapilan_is,
                     baslama_saati=evrak.baslama_saati,
                     bitis_saati=evrak.bitis_saati,
-                    kullanilan_urunler=evrak.kullanilan_urunler,
+                    kullanilan_urunler=kullanilan_urunler_norm,
                     toplam_tutar=evrak.toplam_tutar,
                     tc_kimlik_no=evrak.tc_kimlik_no,
                     musteri_email=evrak.musteri_email,

@@ -392,7 +392,20 @@ async def rapor_email_gonder(pdf_dosyasi: str, ay: int, yil: int) -> bool:
                 raise Exception(f"GMAIL_TOKEN_JSON parse hatası: {str(e)}")
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
+                try:
+                    creds.refresh(Request())
+                except Exception as refresh_error:
+                    error_msg = str(refresh_error)
+                    if 'invalid_grant' in error_msg or 'Token has been expired or revoked' in error_msg:
+                        raise Exception(
+                            "Gmail API token'ı süresi dolmuş veya iptal edilmiş. "
+                            "Lütfen yeni bir token oluşturun:\n"
+                            "1. setup_gmail_token.py script'ini çalıştırın\n"
+                            "2. Oluşan JSON'u GMAIL_TOKEN_JSON environment variable'ına ekleyin\n"
+                            "Detaylı bilgi için: GMAIL_API_HIZLI_KURULUM.md dosyasına bakın."
+                        )
+                    else:
+                        raise Exception(f"Token yenileme hatası: {error_msg}")
             elif credentials_json:
                 raise Exception("Gmail API için GMAIL_TOKEN_JSON kullanın (production).")
             else:
@@ -461,7 +474,20 @@ async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> 
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 # Token'ı yenile
-                creds.refresh(Request())
+                try:
+                    creds.refresh(Request())
+                except Exception as refresh_error:
+                    error_msg = str(refresh_error)
+                    if 'invalid_grant' in error_msg or 'Token has been expired or revoked' in error_msg:
+                        raise Exception(
+                            "Gmail API token'ı süresi dolmuş veya iptal edilmiş. "
+                            "Lütfen yeni bir token oluşturun:\n"
+                            "1. setup_gmail_token.py script'ini çalıştırın\n"
+                            "2. Oluşan JSON'u GMAIL_TOKEN_JSON environment variable'ına ekleyin\n"
+                            "Detaylı bilgi için: GMAIL_API_HIZLI_KURULUM.md dosyasına bakın."
+                        )
+                    else:
+                        raise Exception(f"Token yenileme hatası: {error_msg}")
             elif credentials_json:
                 # İlk kez setup - credentials JSON'dan flow başlat
                 try:
