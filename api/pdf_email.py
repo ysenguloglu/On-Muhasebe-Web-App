@@ -10,6 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
+from email.policy import SMTP as SMTPPolicy
 from models import IsEvrakiCreateWithEmail
 
 # Environment variable'ları yükle
@@ -312,7 +313,8 @@ async def aylik_rapor_pdf_olustur(ay: int, yil: int, musteri_sayisi: int, ciro: 
         import requests
         ay_adi = _AYLAR[ay - 1] if 1 <= ay <= 12 else str(ay)
         baslik = f"İş Evrakları Aylık Rapor - {ay_adi} {yil}"
-        dosya_adi = f"Aylik_Rapor_{ay_adi}_{yil}.pdf".replace(" ", "_")
+        # E-posta eki için ASCII dosya adı (Türkçe karakter "noname" hatası önlenir)
+        dosya_adi = f"Aylik_Rapor_{yil}-{ay:02d}.pdf"
         temp_dir = tempfile.gettempdir()
         dosya_yolu = os.path.join(temp_dir, dosya_adi)
 
@@ -420,13 +422,14 @@ async def rapor_email_gonder(pdf_dosyasi: str, ay: int, yil: int) -> bool:
         msg['To'] = email_to
         msg['Subject'] = subject
         msg.attach(MIMEText(body_text, 'plain', 'utf-8'))
+        attachment_filename = f"Aylik_Rapor_{yil}-{ay:02d}.pdf"
         with open(pdf_dosyasi, "rb") as attachment:
-            part = MIMEBase('application', 'octet-stream')
+            part = MIMEBase('application', 'pdf')
             part.set_payload(attachment.read())
             encoders.encode_base64(part)
-            part.add_header('Content-Disposition', f'attachment; filename={os.path.basename(pdf_dosyasi)}')
+            part.add_header('Content-Disposition', 'attachment', filename=attachment_filename)
             msg.attach(part)
-        raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+        raw_message = base64.urlsafe_b64encode(msg.as_bytes(policy=SMTPPolicy)).decode('utf-8')
         service = build('gmail', 'v1', credentials=creds)
         service.users().messages().send(userId='me', body={'raw': raw_message}).execute()
         return True
