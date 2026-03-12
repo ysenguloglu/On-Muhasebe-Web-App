@@ -145,6 +145,15 @@
             background: #667eea;
             color: white;
         }
+        /* Liste alanı sabit yükseklik, içeride scroll */
+        .evrak-list-scroll {
+            max-height: 480px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
         /* Mobil için kart görünümü */
         .evrak-card {
             display: none;
@@ -430,24 +439,26 @@
                    style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"
                    onkeyup="aramaYap()">
         </div>
-        <!-- Masaüstü için tablo -->
-        <table id="evrakTable">
-            <thead>
-                <tr>
-                    <th>İş Emri No</th>
-                    <th>Tarih</th>
-                    <th>Müşteri</th>
-                    <th>Araç Plakası</th>
-                    <th>Toplam Tutar</th>
-                    <th>Ödeme</th>
-                    <th>İşlemler</th>
-                </tr>
-            </thead>
-            <tbody id="evrakTableBody">
-            </tbody>
-        </table>
-        <!-- Mobil için kartlar -->
-        <div id="evrakCardsContainer"></div>
+        <div class="evrak-list-scroll">
+            <!-- Masaüstü için tablo -->
+            <table id="evrakTable">
+                <thead>
+                    <tr>
+                        <th>İş Emri No</th>
+                        <th>Tarih</th>
+                        <th>Müşteri</th>
+                        <th>Araç Plakası</th>
+                        <th>Toplam Tutar</th>
+                        <th>Ödeme</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="evrakTableBody">
+                </tbody>
+            </table>
+            <!-- Mobil için kartlar -->
+            <div id="evrakCardsContainer"></div>
+        </div>
     </div>
     
     <!-- Ürün Ekleme Modal -->

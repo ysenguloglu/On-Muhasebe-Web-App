@@ -88,10 +88,42 @@
             gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
+            align-items: center;
         }
         .search-filter input, .search-filter select {
-            flex: 1;
             min-width: 200px;
+        }
+        .search-filter input#search {
+            flex: 1;
+            max-width: 400px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .search-filter .ara-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .search-filter .ara-btn:hover {
+            background: #5568d3;
+        }
+        /* Cari listesi sabit yükseklik, içeride scroll */
+        .cari-list-scroll {
+            max-height: 480px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .cari-list-scroll table {
+            margin-top: 0;
         }
         table {
             width: 100%;
@@ -160,15 +192,6 @@
             <a href="/" class="back-btn">← Ana Sayfa</a>
         </div>
         
-        <div class="search-filter">
-            <input type="text" id="search" placeholder="Cari kodu veya ünvan ara..." onkeyup="loadCari()">
-            <select id="tipFilter" onchange="loadCari()">
-                <option value="">Tümü</option>
-                <option value="Müşteri">Müşteri</option>
-                <option value="Tedarikçi">Tedarikçi</option>
-            </select>
-        </div>
-        
         <form id="cariForm">
             <div class="form-grid">
                 <div class="form-group">
@@ -230,23 +253,35 @@
             <button type="button" onclick="clearForm()">🔄 Temizle</button>
         </form>
         
-        <table id="cariTable">
-            <thead>
-                <tr>
-                    <th>Kod</th>
-                    <th>Ünvan</th>
-                    <th>Tip</th>
-                    <th>Telefon</th>
-                    <th>E-posta</th>
-                    <th>Vergi No</th>
-                    <th>Firma Tipi</th>
-                    <th>Bakiye</th>
-                    <th>İşlemler</th>
-                </tr>
-            </thead>
-            <tbody id="cariTableBody">
-            </tbody>
-        </table>
+        <h2 style="margin-top: 40px; color: #667eea;">Kayıtlı Cariler</h2>
+        <div class="search-filter" style="margin-top: 10px; margin-bottom: 20px;">
+            <input type="text" id="search" placeholder="Ünvan ile ara..." onkeyup="loadCari()">
+            <button type="button" class="ara-btn" onclick="loadCari()">🔍 Ara</button>
+            <select id="tipFilter" onchange="loadCari()">
+                <option value="">Tümü</option>
+                <option value="Müşteri">Müşteri</option>
+                <option value="Tedarikçi">Tedarikçi</option>
+            </select>
+        </div>
+        <div class="cari-list-scroll">
+            <table id="cariTable">
+                <thead>
+                    <tr>
+                        <th>Kod</th>
+                        <th>Ünvan</th>
+                        <th>Tip</th>
+                        <th>Telefon</th>
+                        <th>E-posta</th>
+                        <th>Vergi No</th>
+                        <th>Firma Tipi</th>
+                        <th>Bakiye</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="cariTableBody">
+                </tbody>
+            </table>
+        </div>
     </div>
     
     <script>
