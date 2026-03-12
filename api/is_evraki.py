@@ -113,7 +113,7 @@ async def is_evraki_ekle(evrak: IsEvrakiCreate):
             evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
             evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
             evrak.baslama_saati, evrak.bitis_saati, kullanilan_urunler_norm,
-            evrak.toplam_tutar, evrak.tc_kimlik_no
+            evrak.toplam_tutar, evrak.tc_kimlik_no, evrak.odeme_durumu or "odenmedi"
         )
         
         if basarili:
@@ -159,10 +159,12 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
             stok_mesajlari["basarili"] = basarili_mesajlar
             stok_mesajlari["hatali"] = hata_mesajlari
         
-        # Cari hesabı ekle (TC kontrolü ile)
+        # Cari hesabı ekle (TC kontrolü ile). Ödendi ise bakiye 0, ödenmedi ise toplam_tutar kadar borç.
         cari_mesaji = ""
         if evrak.musteri_unvan:
             vergi_no_deger = evrak.tc_kimlik_no if evrak.tc_kimlik_no else ""
+            odendi = (evrak.odeme_durumu or "").strip().lower() == "odendi"
+            cari_bakiye = 0.0 if odendi else float(evrak.toplam_tutar or 0)
             basarili, mesaj = db.cari_ekle_tc_kontrolu_ile(
                 cari_kodu="",
                 unvan=evrak.musteri_unvan,
@@ -173,7 +175,7 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
                 tc_kimlik_no=evrak.tc_kimlik_no if evrak.tc_kimlik_no else "",
                 vergi_no=vergi_no_deger,
                 vergi_dairesi=evrak.vergi_dairesi,
-                bakiye=0,
+                bakiye=cari_bakiye,
                 aciklama="İş evrakından otomatik eklendi",
                 firma_tipi=evrak.firma_tipi
             )
@@ -185,7 +187,7 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
             evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
             evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
             evrak.baslama_saati, evrak.bitis_saati, kullanilan_urunler_norm,
-            evrak.toplam_tutar, evrak.tc_kimlik_no
+            evrak.toplam_tutar, evrak.tc_kimlik_no, evrak.odeme_durumu or "odenmedi"
         )
         
         if not basarili:
@@ -242,7 +244,7 @@ async def is_evraki_guncelle(evrak_id: int, evrak: IsEvrakiUpdate):
             evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
             evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
             evrak.baslama_saati, evrak.bitis_saati, kullanilan_urunler_norm,
-            evrak.toplam_tutar, evrak.tc_kimlik_no
+            evrak.toplam_tutar, evrak.tc_kimlik_no, evrak.odeme_durumu or "odenmedi"
         )
         
         if basarili:
@@ -277,7 +279,7 @@ async def is_evraki_guncelle_ve_gonder(evrak_id: int, evrak: IsEvrakiUpdateWithE
             evrak.arac_plakasi, evrak.cekici_dorse, evrak.marka_model,
             evrak.talep_edilen_isler, evrak.musteri_sikayeti, evrak.yapilan_is,
             evrak.baslama_saati, evrak.bitis_saati, kullanilan_urunler_norm,
-            evrak.toplam_tutar, evrak.tc_kimlik_no
+            evrak.toplam_tutar, evrak.tc_kimlik_no, evrak.odeme_durumu or "odenmedi"
         )
         
         if not basarili:

@@ -79,6 +79,7 @@ class IsEvrakiCreate(BaseModel):
     kullanilan_urunler: Optional[str] = ""
     toplam_tutar: Optional[float] = 0
     tc_kimlik_no: Optional[str] = ""
+    odeme_durumu: Optional[str] = "odenmedi"
 
 
 class IsEvrakiCreateWithEmail(BaseModel):
@@ -97,6 +98,7 @@ class IsEvrakiCreateWithEmail(BaseModel):
     kullanilan_urunler: Optional[str] = ""
     toplam_tutar: Optional[float] = 0
     tc_kimlik_no: Optional[str] = ""
+    odeme_durumu: Optional[str] = "odenmedi"
     musteri_email: Optional[str] = ""
     musteri_adres: Optional[str] = ""
     vergi_dairesi: Optional[str] = ""
@@ -120,6 +122,7 @@ class IsEvrakiUpdate(BaseModel):
     kullanilan_urunler: Optional[str] = ""
     toplam_tutar: Optional[float] = 0
     tc_kimlik_no: Optional[str] = ""
+    odeme_durumu: Optional[str] = "odenmedi"
 
 
 class IsEvrakiUpdateWithEmail(BaseModel):
@@ -138,6 +141,7 @@ class IsEvrakiUpdateWithEmail(BaseModel):
     kullanilan_urunler: Optional[str] = ""
     toplam_tutar: Optional[float] = 0
     tc_kimlik_no: Optional[str] = ""
+    odeme_durumu: Optional[str] = "odenmedi"
     musteri_email: Optional[str] = ""
     musteri_adres: Optional[str] = ""
     vergi_dairesi: Optional[str] = ""

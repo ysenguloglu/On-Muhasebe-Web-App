@@ -17,8 +17,8 @@ class IsEvrakiDB:
                       musteri_sikayeti: str = "", yapilan_is: str = "",
                       baslama_saati: str = "", bitis_saati: str = "",
                       kullanilan_urunler: str = "", toplam_tutar: float = 0,
-                      tc_kimlik_no: str = "") -> tuple[bool, str]:
-        """Yeni iş evrakı ekle"""
+                      tc_kimlik_no: str = "", odeme_durumu: str = "odenmedi") -> tuple[bool, str]:
+        """Yeni iş evrakı ekle. odeme_durumu: 'odendi' | 'odenmedi'"""
         conn = None
         try:
             conn = self.db.connect()
@@ -35,18 +35,19 @@ class IsEvrakiDB:
             bitis_saati_val = bitis_saati if bitis_saati else None
             kullanilan_urunler_val = kullanilan_urunler if kullanilan_urunler else None
             tc_kimlik_no_val = tc_kimlik_no.strip() if tc_kimlik_no and tc_kimlik_no.strip() else None
+            odeme_durumu_val = (odeme_durumu or "odenmedi").strip() or "odenmedi"
             
             query = """
                 INSERT INTO is_evraki (is_emri_no, tarih, musteri_unvan, telefon, arac_plakasi,
                                      cekici_dorse, marka_model, talep_edilen_isler, musteri_sikayeti,
                                      yapilan_is, baslama_saati, bitis_saati, kullanilan_urunler,
-                                     toplam_tutar, tc_kimlik_no)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     toplam_tutar, tc_kimlik_no, odeme_durumu)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (is_emri_no, tarih, musteri_unvan, telefon_val, arac_plakasi_val, cekici_dorse_val,
                   marka_model_val, talep_edilen_isler_val, musteri_sikayeti_val, yapilan_is_val,
-                  baslama_saati_val, bitis_saati_val, kullanilan_urunler_val, toplam_tutar, tc_kimlik_no_val))
+                  baslama_saati_val, bitis_saati_val, kullanilan_urunler_val, toplam_tutar, tc_kimlik_no_val, odeme_durumu_val))
             conn.commit()
             return (True, "İş evrakı başarıyla kaydedildi")
         except Exception as e:
@@ -87,14 +88,13 @@ class IsEvrakiDB:
                            musteri_sikayeti: str = "", yapilan_is: str = "",
                            baslama_saati: str = "", bitis_saati: str = "",
                            kullanilan_urunler: str = "", toplam_tutar: float = 0,
-                           tc_kimlik_no: str = "") -> tuple[bool, str]:
-        """İş evrakı güncelle"""
+                           tc_kimlik_no: str = "", odeme_durumu: str = "odenmedi") -> tuple[bool, str]:
+        """İş evrakı güncelle. odeme_durumu: 'odendi' | 'odenmedi'"""
         conn = None
         try:
             conn = self.db.connect()
             cursor = self.db._get_cursor(conn)
             
-            # Önce kaydın var olup olmadığını kontrol et
             check_query = "SELECT id FROM is_evraki WHERE id = ?"
             check_query = self.db._convert_placeholders(check_query)
             cursor.execute(check_query, (evrak_id,))
@@ -114,19 +114,20 @@ class IsEvrakiDB:
             bitis_saati_val = bitis_saati if bitis_saati else None
             kullanilan_urunler_val = kullanilan_urunler if kullanilan_urunler else None
             tc_kimlik_no_val = tc_kimlik_no.strip() if tc_kimlik_no and tc_kimlik_no.strip() else None
+            odeme_durumu_val = (odeme_durumu or "odenmedi").strip() or "odenmedi"
             
             query = """
                 UPDATE is_evraki 
                 SET is_emri_no = ?, tarih = ?, musteri_unvan = ?, telefon = ?, arac_plakasi = ?,
                     cekici_dorse = ?, marka_model = ?, talep_edilen_isler = ?, musteri_sikayeti = ?,
                     yapilan_is = ?, baslama_saati = ?, bitis_saati = ?, kullanilan_urunler = ?,
-                    toplam_tutar = ?, tc_kimlik_no = ?
+                    toplam_tutar = ?, tc_kimlik_no = ?, odeme_durumu = ?
                 WHERE id = ?
             """
             query = self.db._convert_placeholders(query)
             cursor.execute(query, (is_emri_no, tarih, musteri_unvan, telefon_val, arac_plakasi_val, cekici_dorse_val,
                   marka_model_val, talep_edilen_isler_val, musteri_sikayeti_val, yapilan_is_val,
-                  baslama_saati_val, bitis_saati_val, kullanilan_urunler_val, toplam_tutar, tc_kimlik_no_val, evrak_id))
+                  baslama_saati_val, bitis_saati_val, kullanilan_urunler_val, toplam_tutar, tc_kimlik_no_val, odeme_durumu_val, evrak_id))
             conn.commit()
             
             return (True, "İş evrakı başarıyla güncellendi")

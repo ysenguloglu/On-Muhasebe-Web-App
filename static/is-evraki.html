@@ -404,6 +404,13 @@
                     <label>İş Bitiş Saati</label>
                     <input type="text" id="bitis_saati" placeholder="Örn: 17:00">
                 </div>
+                <div class="form-group">
+                    <label>Ödeme Durumu</label>
+                    <select id="odeme_durumu">
+                        <option value="odenmedi">Ödenmedi</option>
+                        <option value="odendi">Ödendi</option>
+                    </select>
+                </div>
             </div>
             
             <div class="form-group full-width">
@@ -432,6 +439,7 @@
                     <th>Müşteri</th>
                     <th>Araç Plakası</th>
                     <th>Toplam Tutar</th>
+                    <th>Ödeme</th>
                     <th>İşlemler</th>
                 </tr>
             </thead>
@@ -607,6 +615,7 @@
                 kullanilan_urunler: JSON.stringify(urunler),
                 toplam_tutar: toplamTutar,
                 tc_kimlik_no: document.getElementById('tc_kimlik_no').value,
+                odeme_durumu: document.getElementById('odeme_durumu').value || 'odenmedi',
                 musteri_email: document.getElementById('musteri_email').value,
                 musteri_adres: document.getElementById('musteri_adres').value,
                 vergi_dairesi: document.getElementById('vergi_dairesi').value,
@@ -689,7 +698,7 @@
             }
             
             if (evraklar.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">Kayıt bulunamadı.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">Kayıt bulunamadı.</td></tr>';
                 if (cardsContainer) {
                     cardsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">Kayıt bulunamadı.</div>';
                 }
@@ -699,12 +708,14 @@
             // Masaüstü için tablo
             evraklar.forEach(item => {
                 const row = tbody.insertRow();
+                const odemeLabel = (item.odeme_durumu || '').toLowerCase() === 'odendi' ? 'Ödendi' : 'Ödenmedi';
                 row.innerHTML = `
                     <td>${item.is_emri_no}</td>
                     <td>${item.tarih}</td>
                     <td>${item.musteri_unvan}</td>
                     <td>${item.arac_plakasi || '-'}</td>
                     <td>${(Number(item.toplam_tutar) || 0).toFixed(2)} ₺</td>
+                    <td>${odemeLabel}</td>
                     <td>
                         <button onclick="showEvrak(${item.id})" style="margin-right: 5px; background: #3498db; color: white;">👁️ Göster</button>
                         <button onclick="editEvrak(${item.id})" style="margin-right: 5px;">✏️ Düzenle</button>
@@ -739,6 +750,10 @@
                             <div class="evrak-card-row">
                                 <span class="evrak-card-label">Toplam Tutar:</span>
                                 <span class="evrak-card-value" style="color: #27ae60; font-weight: 600;">${(Number(item.toplam_tutar) || 0).toFixed(2)} ₺</span>
+                            </div>
+                            <div class="evrak-card-row">
+                                <span class="evrak-card-label">Ödeme:</span>
+                                <span class="evrak-card-value">${(item.odeme_durumu || '').toLowerCase() === 'odendi' ? 'Ödendi' : 'Ödenmedi'}</span>
                             </div>
                         </div>
                         <div class="evrak-card-actions">
@@ -801,6 +816,7 @@
                     document.getElementById('baslama_saati').value = evrak.baslama_saati || '';
                     document.getElementById('bitis_saati').value = evrak.bitis_saati || '';
                     document.getElementById('tc_kimlik_no').value = evrak.tc_kimlik_no || '';
+                    document.getElementById('odeme_durumu').value = evrak.odeme_durumu === 'odendi' ? 'odendi' : 'odenmedi';
                     
                     // Cari hesaptan email ve adres bilgilerini al
                     if (evrak.musteri_unvan) {
@@ -919,6 +935,7 @@
                         '<div><strong>İş Bitiş Saati:</strong> ' + (evrak.bitis_saati || '-') + '</div>' +
                         '</div>' +
                         '<div style="margin-bottom: 15px;"><strong>Toplam Tutar:</strong> <span style="font-size: 18px; color: #27ae60; font-weight: bold;">' + tutarStr + ' ₺</span></div>' +
+                        '<div style="margin-bottom: 15px;"><strong>Ödeme Durumu:</strong> ' + ((evrak.odeme_durumu || '').toLowerCase() === 'odendi' ? 'Ödendi' : 'Ödenmedi') + '</div>' +
                         '<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #667eea;"><strong style="font-size: 16px; color: #667eea;">Kullanılan Ürünler:</strong>' +
                         urunTabloHtml + '</div>';
 
@@ -1015,6 +1032,7 @@
                 kullanilan_urunler: JSON.stringify(urunler),
                 toplam_tutar: toplamTutar,
                 tc_kimlik_no: document.getElementById('tc_kimlik_no').value,
+                odeme_durumu: document.getElementById('odeme_durumu').value || 'odenmedi',
                 musteri_email: document.getElementById('musteri_email').value,
                 musteri_adres: document.getElementById('musteri_adres').value,
                 vergi_dairesi: document.getElementById('vergi_dairesi').value,

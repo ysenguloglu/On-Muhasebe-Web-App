@@ -163,6 +163,7 @@ class DatabaseConnection:
                         kullanilan_urunler TEXT,
                         toplam_tutar DECIMAL(10, 2) DEFAULT 0,
                         tc_kimlik_no VARCHAR(11),
+                        odeme_durumu VARCHAR(20) DEFAULT 'odenmedi',
                         olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """)
@@ -170,6 +171,11 @@ class DatabaseConnection:
             except Exception as e:
                 conn.rollback()
                 print(f"⚠️ İş evrakı tablosu (devam): {e}")
+            try:
+                cursor.execute("ALTER TABLE is_evraki ADD COLUMN odeme_durumu VARCHAR(20) DEFAULT 'odenmedi'")
+                conn.commit()
+            except Exception:
+                conn.rollback()
 
             try:
                 cursor.execute("""
