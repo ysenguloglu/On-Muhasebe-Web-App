@@ -1,6 +1,6 @@
 # Gmail API Hızlı Kurulum (OAuth 2.0)
 
-Render.com'da SMTP portları bloke olduğu için Gmail API kullanıyoruz.
+E-posta gönderimi (iş evrakı PDF, aylık rapor) Gmail API ile yapılır.
 
 ## Adım 1: OAuth 2.0 Credentials Oluşturma
 

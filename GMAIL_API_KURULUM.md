@@ -1,6 +1,6 @@
 # Gmail API Kurulum Rehberi
 
-Render.com'da SMTP portları (25, 465, 587) bloke olduğu için Gmail API kullanıyoruz. Gmail API HTTP/HTTPS üzerinden çalışır ve port kısıtlamalarından etkilenmez.
+E-posta gönderimi (iş evrakı PDF, aylık rapor) Gmail API ile yapılır.
 
 ## Adım 1: Google Cloud Console'da Proje Oluşturma
 

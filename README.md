@@ -58,9 +58,8 @@ cp .env.example .env
 # PDF API Key (html2pdf.app)
 PDF_API_KEY=your_api_key_here
 
-# Gmail API (E-posta gönderme için)
-GMAIL_CREDENTIALS_JSON={"type":"service_account",...}
-GMAIL_TOKEN_JSON={"token":"...","refresh_token":"..."}
+# Gmail API (E-posta gönderme) - Kurulum: GMAIL_API_HIZLI_KURULUM.md
+GMAIL_TOKEN_JSON={"token":"...","refresh_token":"...","token_uri":"...","client_id":"...","client_secret":"...","scopes":["https://www.googleapis.com/auth/gmail.send"]}
 
 # E-posta Ayarları
 EMAIL_FROM=your_email@gmail.com
