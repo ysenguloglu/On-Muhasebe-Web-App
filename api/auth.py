@@ -149,3 +149,15 @@ async def create_user(
     if not ok:
         raise HTTPException(status_code=400, detail=msg)
     return {"success": True, "message": msg}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: dict = Depends(require_admin),
+):
+    """Kullanıcı siler (sadece admin). Son kalan admin silinemez."""
+    ok, msg = db.auth.delete_user(user_id)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"success": True, "message": msg}

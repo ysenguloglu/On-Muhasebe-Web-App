@@ -70,6 +70,16 @@
         .alert-error { background: #f8d7da; color: #721c24; }
         .alert-success { background: #d4edda; color: #155724; }
         .forbidden { text-align: center; padding: 40px 20px; color: #666; }
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-danger:hover { background: #c0392b; }
     </style>
 </head>
 <body>
@@ -133,6 +143,7 @@
                             <th>Kullanıcı adı</th>
                             <th>Rol</th>
                             <th>Oluşturulma</th>
+                            <th>İşlemler</th>
                         </tr>
                     </thead>
                     <tbody id="userListBody"></tbody>
@@ -171,12 +182,14 @@
                 if (data.success && data.data && data.data.length) {
                     data.data.forEach(function(u) {
                         var tr = document.createElement('tr');
+                        tr.dataset.id = u.id;
+                        tr.dataset.username = u.username || '';
                         var date = u.olusturma_tarihi ? new Date(u.olusturma_tarihi).toLocaleString('tr-TR') : '-';
-                        tr.innerHTML = '<td>' + (u.username || '') + '</td><td>' + (u.role || '') + '</td><td>' + date + '</td>';
+                        tr.innerHTML = '<td>' + (u.username || '') + '</td><td>' + (u.role || '') + '</td><td>' + date + '</td><td><button type="button" class="btn-danger" onclick="deleteUser(this)">Sil</button></td>';
                         tbody.appendChild(tr);
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="3">Henüz kullanıcı yok.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4">Henüz kullanıcı yok.</td></tr>';
                 }
             } catch (e) {
                 showAlert('Liste yüklenemedi: ' + (e.message || 'Hata'), 'error');
@@ -211,6 +224,30 @@
                 showAlert('İstek hatası: ' + (e.message || 'Tekrar deneyin.'), 'error');
             }
         });
+
+        async function deleteUser(btn) {
+            var row = btn.closest('tr');
+            var id = parseInt(row.dataset.id, 10);
+            var username = row.dataset.username || ('ID: ' + id);
+            if (!confirm('"' + username + '" kullanıcısını silmek istediğinize emin misiniz?')) return;
+            try {
+                var res = await fetch(API_BASE + '/api/auth/users/' + id, { method: 'DELETE' });
+                var data = await res.json();
+                if (res.ok && data.success) {
+                    showAlert(data.message || 'Kullanıcı silindi.', 'success');
+                    loadUsers();
+                    if (currentUser && currentUser.id === id) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }
+                } else {
+                    showAlert(data.detail || 'Silinemedi.', 'error');
+                }
+            } catch (e) {
+                showAlert('İstek hatası: ' + (e.message || 'Tekrar deneyin.'), 'error');
+            }
+        }
 
         if (currentUser && currentUser.role === 'admin') loadUsers();
     </script>

@@ -112,3 +112,34 @@ class AuthDB:
             return (False, str(e))
         finally:
             self.db.close()
+
+    def delete_user(self, user_id: int) -> Tuple[bool, str]:
+        """Kullanıcıyı siler. Son kalan admin silinemez."""
+        conn = None
+        try:
+            conn = self.db.connect()
+            cursor = self.db._get_cursor(conn)
+            q_usr = "SELECT id, role FROM users WHERE id = ?"
+            cursor.execute(self.db._convert_placeholders(q_usr), (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return (False, "Kullanıcı bulunamadı.")
+            if row.get("role") == "admin":
+                cursor.execute("SELECT COUNT(*) as n FROM users WHERE role = 'admin'")
+                cnt = cursor.fetchone()
+                n_admin = (cnt.get("n") or 0) if cnt else 0
+                if n_admin <= 1:
+                    return (False, "En az bir admin hesabı kalmalıdır. Silmek için önce başka bir admin ekleyin.")
+            q_del = "DELETE FROM users WHERE id = ?"
+            cursor.execute(self.db._convert_placeholders(q_del), (user_id,))
+            conn.commit()
+            return (True, "Kullanıcı silindi.")
+        except Exception as e:
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            return (False, str(e))
+        finally:
+            self.db.close()
