@@ -49,8 +49,13 @@ async def root():
                 border-radius: 15px;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.2);
                 margin-bottom: 30px;
-                text-align: center;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 16px;
             }
+            .header-left { text-align: left; }
             .header h1 {
                 color: #667eea;
                 font-size: 2.5em;
@@ -59,6 +64,22 @@ async def root():
             .header p {
                 color: #666;
                 font-size: 1.1em;
+            }
+            .btn-logout {
+                display: inline-block;
+                padding: 10px 20px;
+                background: transparent;
+                color: #666;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                text-decoration: none;
+                font-size: 14px;
+                transition: background 0.2s, color 0.2s;
+            }
+            .btn-logout:hover {
+                background: #f5f5f5;
+                color: #333;
+                border-color: #ccc;
             }
             .cards {
                 display: grid;
@@ -144,8 +165,11 @@ async def root():
         </script>
         <div class="container">
             <div class="header">
-                <h1>📊 Ön Muhasebe</h1>
-                <p>Stok, Cari Hesap ve İş Evrakı Yönetimi</p>
+                <div class="header-left">
+                    <h1>📊 Ön Muhasebe</h1>
+                    <p>Stok, Cari Hesap ve İş Evrakı Yönetimi</p>
+                </div>
+                <a href="#" class="btn-logout" id="logoutBtn" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;">Çıkış</a>
             </div>
             
             <div class="cards">
@@ -180,12 +204,24 @@ async def root():
                 </a>
             </div>
             
-            <div class="footer">
-                <a href="/docs">API Dokümantasyonu</a>
-                <a href="/redoc">ReDoc</a>
-                <a href="#" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;" style="margin-left: 20px; color: #e74c3c;">Çıkış</a>
+            <div class="footer" id="mainFooter">
+                <span class="footer-docs admin-only-link">
+                    <a href="/docs">API Dokümantasyonu</a>
+                    <a href="/redoc">ReDoc</a>
+                </span>
             </div>
         </div>
+        <script>
+            (function(){
+                try {
+                    var u = JSON.parse(localStorage.getItem('user') || 'null');
+                    if (u && u.role !== 'admin') {
+                        var el = document.querySelector('.admin-only-link');
+                        if (el) el.style.display = 'none';
+                    }
+                } catch(e) {}
+            })();
+        </script>
     </body>
     </html>
     """

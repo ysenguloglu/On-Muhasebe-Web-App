@@ -33,12 +33,6 @@
             border-radius: 5px;
             text-decoration: none;
         }
-        .logout-btn {
-            color: #e74c3c;
-            text-decoration: none;
-            font-size: 14px;
-            margin-left: 10px;
-        }
         .form-group { margin-bottom: 14px; }
         label { display: block; margin-bottom: 4px; color: #333; font-weight: 500; }
         input, select {
@@ -102,10 +96,7 @@
     <div class="container">
         <div class="header">
             <h1>👤 Kullanıcı Yönetimi</h1>
-            <div>
-                <a href="/" class="back-btn">← Ana Sayfa</a>
-                <a href="#" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;" class="logout-btn">Çıkış</a>
-            </div>
+            <a href="/" class="back-btn">← Ana Sayfa</a>
         </div>
         <div id="forbiddenMsg" class="forbidden" style="display: none;">
             <p>Bu sayfaya sadece yönetici (admin) erişebilir.</p>
