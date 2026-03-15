@@ -401,7 +401,7 @@ h1 {{ color: #1f538d; text-align: center; font-size: 18px; margin-bottom: 16px; 
 
 
 async def rapor_email_gonder(pdf_dosyasi: str, ay: int, yil: int) -> bool:
-    """Aylık rapor PDF'ini EMAIL_TO adresine SMTP ile gönderir."""
+    """Aylık rapor PDF'ini EMAIL_TO adresine Resend API ile gönderir."""
     try:
         email_to = os.getenv("EMAIL_TO", "")
         if not email_to:
@@ -422,7 +422,7 @@ async def rapor_email_gonder(pdf_dosyasi: str, ay: int, yil: int) -> bool:
 
 
 async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> bool:
-    """E-posta gönder - SMTP ile (mail.com veya herhangi bir SMTP)."""
+    """E-posta gönder - Resend API ile."""
     try:
         email_to = os.getenv("EMAIL_TO", "")
         if not email_to:
@@ -433,4 +433,4 @@ async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> 
         _send_email_resend(email_to, subject, body_text, attachment_path=pdf_dosyasi)
         return True
     except Exception as e:
-        raise Exception(f"E-posta gönderme hatası (SMTP): {str(e)}")
+        raise Exception(f"E-posta gönderme hatası (Resend): {str(e)}")
