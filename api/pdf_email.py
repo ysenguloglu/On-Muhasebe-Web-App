@@ -1,11 +1,17 @@
 """
-PDF oluşturma ve e-posta gönderme fonksiyonları (Resend API)
+PDF oluşturma ve e-posta gönderme fonksiyonları (Gmail API)
 """
 import os
 import base64
+import json
 import tempfile
 from datetime import datetime
 from typing import List, Dict, Optional, Union
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
+from email.policy import SMTP as SMTPPolicy
 from models import IsEvrakiCreateWithEmail
 
 # Environment variable'ları yükle
@@ -27,40 +33,69 @@ except ImportError:
         TURKIYE_TIMEZONE = timezone(timedelta(hours=3))
 
 
-def _send_email_resend(
+def _send_email_gmail(
     to_addrs: Union[str, List[str]],
     subject: str,
     body_text: str,
     attachment_path: Optional[str] = None,
     attachment_filename: Optional[str] = None,
 ) -> None:
-    """Resend API ile e-posta gönderir. RESEND_API_KEY ve EMAIL_FROM .env'de olmalı."""
-    import resend
-    api_key = os.getenv("RESEND_API_KEY", "")
-    email_from = os.getenv("EMAIL_FROM", "Acme <onboarding@resend.dev>")
-    if not api_key:
-        raise Exception("RESEND_API_KEY environment variable tanımlı olmalı")
+    """Gmail API ile e-posta gönderir. GMAIL_TOKEN_JSON ve EMAIL_FROM .env'de olmalı."""
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
+    from googleapiclient.discovery import build
+
+    email_from = os.getenv("EMAIL_FROM", "")
+    token_json = os.getenv("GMAIL_TOKEN_JSON", "")
+    if not token_json:
+        raise Exception("GMAIL_TOKEN_JSON environment variable tanımlı olmalı")
     if not email_from:
-        email_from = "Acme <onboarding@resend.dev>"
+        raise Exception("EMAIL_FROM environment variable tanımlı olmalı")
     if isinstance(to_addrs, str):
         to_addrs = [to_addrs]
-    resend.api_key = api_key
-    params = {
-        "from": email_from,
-        "to": to_addrs,
-        "subject": subject,
-        "html": f"<p>{body_text.replace(chr(10), '<br>')}</p>",
-    }
+
+    try:
+        token_data = json.loads(token_json)
+        creds = Credentials.from_authorized_user_info(token_data)
+    except Exception as e:
+        raise Exception(f"GMAIL_TOKEN_JSON parse hatası: {str(e)}")
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+            except Exception as refresh_error:
+                err = str(refresh_error)
+                if "invalid_grant" in err or "Token has been expired or revoked" in err:
+                    raise Exception(
+                        "Gmail API token süresi dolmuş veya iptal edilmiş. "
+                        "Yeni token oluşturun: setup_gmail_token.py çalıştırıp GMAIL_TOKEN_JSON güncelleyin. "
+                        "Detay: GMAIL_API_HIZLI_KURULUM.md"
+                    )
+                raise Exception(f"Token yenileme hatası: {err}")
+        else:
+            raise Exception("GMAIL_TOKEN_JSON geçerli değil veya eksik. Kurulum: GMAIL_API_HIZLI_KURULUM.md")
+
+    msg = MIMEMultipart()
+    msg["From"] = email_from
+    msg["To"] = ", ".join(to_addrs)
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body_text, "plain", "utf-8"))
     if attachment_path and os.path.isfile(attachment_path):
         with open(attachment_path, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode("utf-8")
-        params["attachments"] = [
-            {
-                "filename": attachment_filename or os.path.basename(attachment_path),
-                "content": b64,
-            }
-        ]
-    resend.Emails.send(params)
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(f.read())
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                "attachment",
+                filename=attachment_filename or os.path.basename(attachment_path),
+            )
+            msg.attach(part)
+
+    raw = base64.urlsafe_b64encode(msg.as_bytes(policy=SMTPPolicy)).decode("utf-8")
+    service = build("gmail", "v1", credentials=creds)
+    service.users().messages().send(userId="me", body={"raw": raw}).execute()
 
 
 async def pdf_olustur_api(evrak: IsEvrakiCreateWithEmail, urunler: List[Dict]) -> Optional[str]:
@@ -401,7 +436,7 @@ h1 {{ color: #1f538d; text-align: center; font-size: 18px; margin-bottom: 16px; 
 
 
 async def rapor_email_gonder(pdf_dosyasi: str, ay: int, yil: int) -> bool:
-    """Aylık rapor PDF'ini EMAIL_TO adresine Resend API ile gönderir."""
+    """Aylık rapor PDF'ini EMAIL_TO adresine Gmail API ile gönderir."""
     try:
         email_to = os.getenv("EMAIL_TO", "")
         if not email_to:
@@ -409,7 +444,7 @@ async def rapor_email_gonder(pdf_dosyasi: str, ay: int, yil: int) -> bool:
         ay_adi = _AYLAR[ay - 1] if 1 <= ay <= 12 else str(ay)
         subject = f"Aylık İş Evrakları Raporu - {ay_adi} {yil}"
         body_text = f"{ay_adi} {yil} dönemine ait iş evrakları özet raporu ekteki PDF dosyasında yer almaktadır."
-        _send_email_resend(
+        _send_email_gmail(
             email_to,
             subject,
             body_text,
@@ -422,7 +457,7 @@ async def rapor_email_gonder(pdf_dosyasi: str, ay: int, yil: int) -> bool:
 
 
 async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> bool:
-    """E-posta gönder - Resend API ile."""
+    """E-posta gönder - Gmail API ile."""
     try:
         email_to = os.getenv("EMAIL_TO", "")
         if not email_to:
@@ -430,7 +465,7 @@ async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> 
         subject = f"Servis İş Emri - {evrak.arac_plakasi or 'N/A'} - {evrak.musteri_unvan}"
         turkiye_now = datetime.now(TURKIYE_TIMEZONE)
         body_text = f"{turkiye_now.strftime('%d.%m.%Y')} tarihine ait iş emri PDF olarak ekte gönderilmiştir."
-        _send_email_resend(email_to, subject, body_text, attachment_path=pdf_dosyasi)
+        _send_email_gmail(email_to, subject, body_text, attachment_path=pdf_dosyasi)
         return True
     except Exception as e:
-        raise Exception(f"E-posta gönderme hatası (Resend): {str(e)}")
+        raise Exception(f"E-posta gönderme hatası (Gmail API): {str(e)}")
