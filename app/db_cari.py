@@ -78,6 +78,28 @@ class CariDB:
                 return False
             print(f"Cari güncelleme hatası: {e}")
             return False
+
+    def cari_bakiye_artir(self, cari_id: int, tutar: float) -> bool:
+        """Cari hesap bakiyesine tutar ekler (iş evrakı ödenmedi için)."""
+        conn = None
+        try:
+            conn = self.db.connect()
+            cursor = self.db._get_cursor(conn)
+            query = "UPDATE cari SET bakiye = COALESCE(bakiye, 0) + ? WHERE id = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, (float(tutar), cari_id))
+            conn.commit()
+            return True
+        except Exception as e:
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            print(f"Cari bakiye güncelleme hatası: {e}")
+            return False
+        finally:
+            self.db.close()
     
     def cari_sil(self, cari_id: int) -> bool:
         """Cari hesabı sil"""
@@ -214,6 +236,8 @@ class CariDB:
         if tc_kimlik_no and tc_kimlik_no.strip():
             mevcut_cari = self.cari_tc_ile_ara(tc_kimlik_no)
             if mevcut_cari:
+                if bakiye != 0:
+                    self.cari_bakiye_artir(mevcut_cari["id"], bakiye)
                 return (True, f"Bu TC kimlik no'ya sahip cari hesap zaten mevcut: {mevcut_cari.get('unvan', '')}")
         
         # VKN (vergi_no) kontrolü
@@ -227,6 +251,8 @@ class CariDB:
                 cursor.execute(query, (vergi_no.strip(),))
                 row = cursor.fetchone()
                 if row:
+                    if bakiye != 0:
+                        self.cari_bakiye_artir(row["id"], bakiye)
                     return (True, f"Bu VKN'ye sahip cari hesap zaten mevcut: {row.get('unvan', '')}")
             finally:
                 if conn:
@@ -263,6 +289,8 @@ class CariDB:
                                     self.db.conn = None
                                 except:
                                     pass
+                if bakiye != 0:
+                    self.cari_bakiye_artir(mevcut_cari["id"], bakiye)
                 return (True, f"Aynı ünvana sahip cari hesap zaten mevcut: {unvan}")
         
         if not cari_kodu or not cari_kodu.strip():
@@ -304,6 +332,8 @@ class CariDB:
         else:
             mevcut_cari = self.cari_unvan_ile_ara(unvan)
             if mevcut_cari:
+                if bakiye != 0:
+                    self.cari_bakiye_artir(mevcut_cari["id"], bakiye)
                 return (True, f"Aynı ünvana sahip cari hesap zaten mevcut: {unvan}")
             return (False, "Cari hesap eklenirken bir hata oluştu")
 
