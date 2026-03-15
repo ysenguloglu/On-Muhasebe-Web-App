@@ -34,5 +34,8 @@ passlib[bcrypt]>=1.7.4
 bcrypt>=4.0.0,<4.1.0
 python-jose[cryptography]>=3.3.0
 
+# E-posta (Resend API)
+resend>=2.0.0
+
 # Not: PDF oluşturma için html2pdf.app API kullanılmaktadır (harici servis)
 # Not: Veritabanı yalnızca MySQL (pymysql). DATABASE_URL zorunludur.

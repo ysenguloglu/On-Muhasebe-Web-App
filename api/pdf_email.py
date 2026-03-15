@@ -1,16 +1,11 @@
 """
-PDF oluşturma ve e-posta gönderme fonksiyonları
+PDF oluşturma ve e-posta gönderme fonksiyonları (Resend API)
 """
 import os
-import smtplib
+import base64
 import tempfile
 from datetime import datetime
 from typing import List, Dict, Optional, Union
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email import encoders
-from email.policy import SMTP as SMTPPolicy
 from models import IsEvrakiCreateWithEmail
 
 # Environment variable'ları yükle
@@ -32,50 +27,40 @@ except ImportError:
         TURKIYE_TIMEZONE = timezone(timedelta(hours=3))
 
 
-def _send_email_smtp(
+def _send_email_resend(
     to_addrs: Union[str, List[str]],
     subject: str,
     body_text: str,
     attachment_path: Optional[str] = None,
     attachment_filename: Optional[str] = None,
 ) -> None:
-    """SMTP ile e-posta gönderir (mail.com veya herhangi bir SMTP). Zaman aşımı ve 465 SSL destekli."""
-    smtp_server = os.getenv("SMTP_SERVER", "smtp.mail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_timeout = int(os.getenv("SMTP_TIMEOUT", "25"))
-    smtp_user = os.getenv("SMTP_USER", "sinankirtikli@mail.com")
-    smtp_password = os.getenv("SMTP_PASSWORD", "")
-    email_from = os.getenv("EMAIL_FROM", "sinankirtikli@mail.com")
-    if not smtp_password:
-        raise Exception("SMTP_PASSWORD environment variable tanımlı olmalı (mail.com hesap şifreniz)")
+    """Resend API ile e-posta gönderir. RESEND_API_KEY ve EMAIL_FROM .env'de olmalı."""
+    import resend
+    api_key = os.getenv("RESEND_API_KEY", "")
+    email_from = os.getenv("EMAIL_FROM", "")
+    if not api_key:
+        raise Exception("RESEND_API_KEY environment variable tanımlı olmalı")
+    if not email_from:
+        raise Exception("EMAIL_FROM environment variable tanımlı olmalı")
     if isinstance(to_addrs, str):
         to_addrs = [to_addrs]
-    msg = MIMEMultipart()
-    msg["From"] = email_from
-    msg["To"] = ", ".join(to_addrs)
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body_text, "plain", "utf-8"))
+    resend.api_key = api_key
+    params = {
+        "from": email_from,
+        "to": to_addrs,
+        "subject": subject,
+        "html": f"<p>{body_text.replace(chr(10), '<br>')}</p>",
+    }
     if attachment_path and os.path.isfile(attachment_path):
         with open(attachment_path, "rb") as f:
-            part = MIMEBase("application", "octet-stream")
-            part.set_payload(f.read())
-            encoders.encode_base64(part)
-            part.add_header(
-                "Content-Disposition",
-                "attachment",
-                filename=attachment_filename or os.path.basename(attachment_path),
-            )
-            msg.attach(part)
-    payload = msg.as_string(policy=SMTPPolicy)
-    if smtp_port == 465:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=smtp_timeout) as server:
-            server.login(smtp_user, smtp_password)
-            server.sendmail(email_from, to_addrs, payload)
-    else:
-        with smtplib.SMTP(smtp_server, smtp_port, timeout=smtp_timeout) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_password)
-            server.sendmail(email_from, to_addrs, payload)
+            b64 = base64.b64encode(f.read()).decode("utf-8")
+        params["attachments"] = [
+            {
+                "filename": attachment_filename or os.path.basename(attachment_path),
+                "content": b64,
+            }
+        ]
+    resend.Emails.send(params)
 
 
 async def pdf_olustur_api(evrak: IsEvrakiCreateWithEmail, urunler: List[Dict]) -> Optional[str]:
@@ -424,7 +409,7 @@ async def rapor_email_gonder(pdf_dosyasi: str, ay: int, yil: int) -> bool:
         ay_adi = _AYLAR[ay - 1] if 1 <= ay <= 12 else str(ay)
         subject = f"Aylık İş Evrakları Raporu - {ay_adi} {yil}"
         body_text = f"{ay_adi} {yil} dönemine ait iş evrakları özet raporu ekteki PDF dosyasında yer almaktadır."
-        _send_email_smtp(
+        _send_email_resend(
             email_to,
             subject,
             body_text,
@@ -445,7 +430,7 @@ async def email_gonder_api(evrak: IsEvrakiCreateWithEmail, pdf_dosyasi: str) -> 
         subject = f"Servis İş Emri - {evrak.arac_plakasi or 'N/A'} - {evrak.musteri_unvan}"
         turkiye_now = datetime.now(TURKIYE_TIMEZONE)
         body_text = f"{turkiye_now.strftime('%d.%m.%Y')} tarihine ait iş emri PDF olarak ekte gönderilmiştir."
-        _send_email_smtp(email_to, subject, body_text, attachment_path=pdf_dosyasi)
+        _send_email_resend(email_to, subject, body_text, attachment_path=pdf_dosyasi)
         return True
     except Exception as e:
         raise Exception(f"E-posta gönderme hatası (SMTP): {str(e)}")
