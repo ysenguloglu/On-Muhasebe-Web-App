@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kullanıcı Yönetimi - Ön Muhasebe</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { color: #667eea; }
+        .back-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .logout-btn {
+            color: #e74c3c;
+            text-decoration: none;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; margin-bottom: 4px; color: #333; font-weight: 500; }
+        input, select {
+            width: 100%;
+            max-width: 280px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #5568d3; }
+        .section {
+            margin-bottom: 28px;
+            padding-bottom: 28px;
+            border-bottom: 1px solid #eee;
+        }
+        .section:last-of-type { border-bottom: none; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: #333; font-weight: 600; }
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .forbidden { text-align: center; padding: 40px 20px; color: #666; }
+    </style>
+</head>
+<body>
+    <script>
+        (function(){
+            var token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/login'; return; }
+            var orig = window.fetch;
+            window.fetch = function(url, opts) {
+                opts = opts || {};
+                opts.headers = opts.headers || {};
+                if (opts.headers instanceof Headers) opts.headers.append('Authorization', 'Bearer ' + token);
+                else opts.headers['Authorization'] = 'Bearer ' + token;
+                return orig.call(this, url, opts).then(function(res) {
+                    if (res.status === 401) {
+                        localStorage.removeItem('token'); localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }
+                    return res;
+                });
+            };
+        })();
+    </script>
+    <div class="container">
+        <div class="header">
+            <h1>👤 Kullanıcı Yönetimi</h1>
+            <div>
+                <a href="/" class="back-btn">← Ana Sayfa</a>
+                <a href="#" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;" class="logout-btn">Çıkış</a>
+            </div>
+        </div>
+        <div id="forbiddenMsg" class="forbidden" style="display: none;">
+            <p>Bu sayfaya sadece yönetici (admin) erişebilir.</p>
+            <p style="margin-top: 12px;"><a href="/" class="back-btn">Ana Sayfaya Dön</a></p>
+        </div>
+        <div id="adminContent">
+            <div id="alertBox"></div>
+            <div class="section">
+                <h2 style="color: #667eea; margin-bottom: 16px; font-size: 1.2em;">Yeni kullanıcı ekle</h2>
+                <form id="userForm">
+                    <div class="form-group">
+                        <label>Kullanıcı adı</label>
+                        <input type="text" id="newUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Rol</label>
+                        <select id="newRole">
+                            <option value="user">User (sadece İş Evrakı yazabilir)</option>
+                            <option value="admin">Admin (tüm yetkiler)</option>
+                        </select>
+                    </div>
+                    <button type="submit">Kullanıcı oluştur</button>
+                </form>
+            </div>
+            <div class="section">
+                <h2 style="color: #667eea; margin-bottom: 16px; font-size: 1.2em;">Kayıtlı kullanıcılar</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kullanıcı adı</th>
+                            <th>Rol</th>
+                            <th>Oluşturulma</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userListBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API_BASE = window.location.origin;
+        var currentUser = null;
+        try { currentUser = JSON.parse(localStorage.getItem('user') || 'null'); } catch(e) {}
+
+        if (currentUser && currentUser.role === 'admin') {
+            document.getElementById('forbiddenMsg').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+        } else {
+            document.getElementById('forbiddenMsg').style.display = 'block';
+            document.getElementById('adminContent').style.display = 'none';
+        }
+
+        function showAlert(msg, type) {
+            var box = document.getElementById('alertBox');
+            box.className = 'alert alert-' + (type || 'success');
+            box.textContent = msg;
+            box.style.display = 'block';
+            setTimeout(function() { box.style.display = 'none'; }, 5000);
+        }
+
+        async function loadUsers() {
+            if (currentUser && currentUser.role !== 'admin') return;
+            try {
+                var res = await fetch(API_BASE + '/api/auth/users');
+                var data = await res.json();
+                var tbody = document.getElementById('userListBody');
+                tbody.innerHTML = '';
+                if (data.success && data.data && data.data.length) {
+                    data.data.forEach(function(u) {
+                        var tr = document.createElement('tr');
+                        var date = u.olusturma_tarihi ? new Date(u.olusturma_tarihi).toLocaleString('tr-TR') : '-';
+                        tr.innerHTML = '<td>' + (u.username || '') + '</td><td>' + (u.role || '') + '</td><td>' + date + '</td>';
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3">Henüz kullanıcı yok.</td></tr>';
+                }
+            } catch (e) {
+                showAlert('Liste yüklenemedi: ' + (e.message || 'Hata'), 'error');
+            }
+        }
+
+        document.getElementById('userForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var username = document.getElementById('newUsername').value.trim();
+            var password = document.getElementById('newPassword').value;
+            var role = document.getElementById('newRole').value;
+            if (!username || !password) {
+                showAlert('Kullanıcı adı ve şifre girin.', 'error');
+                return;
+            }
+            try {
+                var res = await fetch(API_BASE + '/api/auth/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password, role: role })
+                });
+                var data = await res.json();
+                if (res.ok && data.success) {
+                    showAlert(data.message || 'Kullanıcı oluşturuldu.', 'success');
+                    document.getElementById('newUsername').value = '';
+                    document.getElementById('newPassword').value = '';
+                    loadUsers();
+                } else {
+                    showAlert(data.detail || 'Oluşturulamadı.', 'error');
+                }
+            } catch (e) {
+                showAlert('İstek hatası: ' + (e.message || 'Tekrar deneyin.'), 'error');
+            }
+        });
+
+        if (currentUser && currentUser.role === 'admin') loadUsers();
+    </script>
+</body>
+</html>

@@ -6,8 +6,8 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, HTTPHeader
+from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from jose import JWTError, jwt
 
@@ -56,7 +56,7 @@ def decode_token(token: str) -> Optional[dict]:
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    authorization: Optional[str] = HTTPHeader(None),
+    authorization: Optional[str] = Header(None),
 ) -> dict:
     """Bearer token'dan kullanıcı bilgisini döndürür. Geçersizse 401."""
     token = None
