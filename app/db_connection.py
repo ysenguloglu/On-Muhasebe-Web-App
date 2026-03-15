@@ -234,11 +234,27 @@ class DatabaseConnection:
             except Exception:
                 conn.rollback()
 
+            # Kullanıcılar tablosu (roller: admin, user)
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        username VARCHAR(100) NOT NULL UNIQUE,
+                        password_hash VARCHAR(255) NOT NULL,
+                        role VARCHAR(20) NOT NULL DEFAULT 'user',
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """)
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print(f"⚠️ Users tablosu (devam): {e}")
+
             try:
                 cursor.execute("""
                     SELECT table_name FROM information_schema.tables
                     WHERE table_schema = DATABASE()
-                    AND table_name IN ('stok', 'cari', 'is_evraki', 'is_prosesi', 'is_prosesi_maddeleri')
+                    AND table_name IN ('stok', 'cari', 'is_evraki', 'is_prosesi', 'is_prosesi_maddeleri', 'users')
                 """)
                 rows = cursor.fetchall()
                 names = [r[0] for r in rows] if rows else []

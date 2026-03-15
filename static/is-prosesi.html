@@ -366,16 +366,41 @@
     </style>
 </head>
 <body>
+    <script>
+        (function(){
+            var token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/login'; return; }
+            var orig = window.fetch;
+            window.fetch = function(url, opts) {
+                opts = opts || {};
+                if (token) {
+                    opts.headers = opts.headers || {};
+                    if (opts.headers instanceof Headers) opts.headers.append('Authorization', 'Bearer ' + token);
+                    else opts.headers['Authorization'] = 'Bearer ' + token;
+                }
+                return orig.call(this, url, opts).then(function(res) {
+                    if (res.status === 401) {
+                        localStorage.removeItem('token'); localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }
+                    return res;
+                });
+            };
+        })();
+    </script>
     <div class="container">
         <div class="header">
             <h1>⚙️ İş Prosesleri</h1>
-            <a href="/" class="back-btn">← Ana Sayfa</a>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="/" class="back-btn">← Ana Sayfa</a>
+                <a href="#" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;" style="color: #e74c3c; text-decoration: none; font-size: 14px;">Çıkış</a>
+            </div>
         </div>
 
         <div id="alertContainer"></div>
 
         <!-- Yeni Proses Ekleme Formu -->
-        <div class="section">
+        <div class="section admin-only">
             <h2 id="formTitle">Yeni İş Prosesi Ekle</h2>
             <form id="prosesForm">
                 <input type="hidden" id="prosesId" value="">
@@ -447,9 +472,20 @@
         let editMode = false;
         let currentProsesId = null;
 
+        function getViewerMode() {
+            try {
+                var u = JSON.parse(localStorage.getItem('user') || 'null');
+                return u && u.role === 'user';
+            } catch (e) { return false; }
+        }
+        function applyViewerMode() {
+            if (getViewerMode()) document.querySelectorAll('.admin-only').forEach(function(el) { el.style.display = 'none'; });
+        }
+
         // Sayfa yüklendiğinde prosesleri getir
         document.addEventListener('DOMContentLoaded', function() {
             prosesleriGetir();
+            applyViewerMode();
         });
 
         // Form submit
@@ -605,8 +641,8 @@
                         <td>${olusturmaTarihi}</td>
                         <td>
                             <button onclick="prosesDetayGoster(${proses.id})" class="btn-info" style="margin-right: 5px;">👁️ Göster</button>
-                            <button onclick="prosesDuzenle(${proses.id})" style="margin-right: 5px;">✏️ Düzenle</button>
-                            <button onclick="prosesSil(${proses.id})" class="btn-danger">🗑️ Sil</button>
+                            <span class="admin-only"><button onclick="prosesDuzenle(${proses.id})" style="margin-right: 5px;">✏️ Düzenle</button>
+                            <button onclick="prosesSil(${proses.id})" class="btn-danger">🗑️ Sil</button></span>
                         </td>
                     </tr>
                 `;
@@ -614,6 +650,7 @@
             
             html += '</tbody></table>';
             container.innerHTML = html;
+            applyViewerMode();
             
             // Mobil için kartlar
             if (cardsContainer) {
@@ -650,12 +687,13 @@
                         </div>
                         <div class="proses-card-actions">
                             <button onclick="prosesDetayGoster(${proses.id})" class="btn-info">👁️ Göster</button>
-                            <button onclick="prosesDuzenle(${proses.id})">✏️ Düzenle</button>
-                            <button onclick="prosesSil(${proses.id})" class="btn-danger">🗑️ Sil</button>
+                            <span class="admin-only"><button onclick="prosesDuzenle(${proses.id})">✏️ Düzenle</button>
+                            <button onclick="prosesSil(${proses.id})" class="btn-danger">🗑️ Sil</button></span>
                         </div>
                     `;
                     cardsContainer.appendChild(card);
                 });
+                applyViewerMode();
             }
         }
 

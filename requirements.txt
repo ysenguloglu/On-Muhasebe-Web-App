@@ -29,5 +29,9 @@ pytz>=2023.3
 # Zamanlanmış görevler (aylık rapor otomatik gönderimi)
 APScheduler>=3.10.0
 
+# Kimlik doğrulama (roller: admin / user)
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0
+
 # Not: PDF oluşturma için html2pdf.app API kullanılmaktadır (harici servis)
 # Not: Veritabanı yalnızca MySQL (pymysql). DATABASE_URL zorunludur.

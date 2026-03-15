@@ -1,14 +1,15 @@
 """
 Excel import/export API endpoints
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from fastapi.responses import FileResponse
 import os
 import tempfile
 from datetime import datetime
 from db_instance import db
+from api.auth import get_current_user, require_can_write_module
 
-router = APIRouter(prefix="/api/stok", tags=["excel"])
+router = APIRouter(prefix="/api/stok", tags=["excel"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/excel-export")
@@ -64,7 +65,7 @@ async def stok_excel_export():
         raise HTTPException(status_code=500, detail=f"Excel dışa aktarma hatası: {error_detail}")
 
 
-@router.post("/excel-import")
+@router.post("/excel-import", dependencies=[Depends(require_can_write_module("stok"))])
 async def stok_excel_import(file: UploadFile = File(...)):
     """Import stock data from Excel file"""
     try:

@@ -1,14 +1,15 @@
 """
 Stok (Stock) API endpoints
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from models import (
     StokCreate, StokUpdate, StokMiktarAzalt, StokMiktarAzaltBatch
 )
 from db_instance import db
+from api.auth import get_current_user, require_can_write_module
 
-router = APIRouter(prefix="/api/stok", tags=["stok"])
+router = APIRouter(prefix="/api/stok", tags=["stok"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("")
@@ -35,7 +36,7 @@ async def stok_getir(stok_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_can_write_module("stok"))])
 async def stok_ekle(stok: StokCreate):
     """Create a new stock item"""
     try:
@@ -56,7 +57,7 @@ async def stok_ekle(stok: StokCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{stok_id}")
+@router.put("/{stok_id}", dependencies=[Depends(require_can_write_module("stok"))])
 async def stok_guncelle(stok_id: int, stok: StokUpdate):
     """Update a stock item"""
     try:
@@ -77,7 +78,7 @@ async def stok_guncelle(stok_id: int, stok: StokUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{stok_id}")
+@router.delete("/{stok_id}", dependencies=[Depends(require_can_write_module("stok"))])
 async def stok_sil(stok_id: int):
     """Delete a stock item"""
     try:
@@ -120,7 +121,7 @@ async def stok_urun_kodu_ile_ara(urun_kodu: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/miktar-azalt")
+@router.post("/miktar-azalt", dependencies=[Depends(require_can_write_module("stok"))])
 async def stok_miktar_azalt(request: StokMiktarAzalt):
     """Reduce stock quantity by product code"""
     try:
@@ -135,7 +136,7 @@ async def stok_miktar_azalt(request: StokMiktarAzalt):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/miktar-azalt-batch")
+@router.post("/miktar-azalt-batch", dependencies=[Depends(require_can_write_module("stok"))])
 async def stok_miktar_azalt_batch(request: StokMiktarAzaltBatch):
     """Reduce stock quantities for multiple products"""
     try:

@@ -7,6 +7,16 @@ from fastapi.responses import HTMLResponse
 router = APIRouter()
 
 
+@router.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Giriş sayfası (token gerekmez)"""
+    try:
+        with open("static/login.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse("<h1>Login sayfası bulunamadı</h1>", status_code=404)
+
+
 @router.get("/", response_class=HTMLResponse)
 async def root():
     """Ana sayfa - Web arayüzü"""
@@ -110,6 +120,28 @@ async def root():
         </style>
     </head>
     <body>
+        <script>
+            (function(){
+                var token = localStorage.getItem('token');
+                if (!token) { window.location.href = '/login'; return; }
+                var orig = window.fetch;
+                window.fetch = function(url, opts) {
+                    opts = opts || {};
+                    if (token) {
+                        opts.headers = opts.headers || {};
+                        if (opts.headers instanceof Headers) opts.headers.append('Authorization', 'Bearer ' + token);
+                        else opts.headers['Authorization'] = 'Bearer ' + token;
+                    }
+                    return orig.call(this, url, opts).then(function(res) {
+                        if (res.status === 401) {
+                            localStorage.removeItem('token'); localStorage.removeItem('user');
+                            window.location.href = '/login';
+                        }
+                        return res;
+                    });
+                };
+            })();
+        </script>
         <div class="container">
             <div class="header">
                 <h1>📊 Ön Muhasebe</h1>
@@ -140,11 +172,18 @@ async def root():
                     <h2>İş Prosesleri</h2>
                     <p>İş proseslerini tanımlayıp takip edebilirsiniz.</p>
                 </a>
+                
+                <a href="/kullanicilar" class="card">
+                    <div class="card-icon">👤</div>
+                    <h2>Kullanıcı Yönetimi</h2>
+                    <p>Yeni kullanıcı ekleyin (sadece admin).</p>
+                </a>
             </div>
             
             <div class="footer">
                 <a href="/docs">API Dokümantasyonu</a>
                 <a href="/redoc">ReDoc</a>
+                <a href="#" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;" style="margin-left: 20px; color: #e74c3c;">Çıkış</a>
             </div>
         </div>
     </body>
@@ -191,3 +230,13 @@ async def is_prosesi_ui():
             return f.read()
     except FileNotFoundError:
         return HTMLResponse("<h1>İş prosesi sayfası bulunamadı</h1>", status_code=404)
+
+
+@router.get("/kullanicilar", response_class=HTMLResponse)
+async def kullanicilar_ui():
+    """Kullanıcı yönetimi sayfası (sayfa içinde admin kontrolü yapılır)"""
+    try:
+        with open("static/kullanicilar.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse("<h1>Kullanıcı yönetimi sayfası bulunamadı</h1>", status_code=404)

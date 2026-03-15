@@ -1,12 +1,13 @@
 """
 Cari (Customer Account) API endpoints
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from models import CariCreate, CariUpdate
 from db_instance import db
+from api.auth import get_current_user, require_can_write_module
 
-router = APIRouter(prefix="/api/cari", tags=["cari"])
+router = APIRouter(prefix="/api/cari", tags=["cari"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("")
@@ -33,7 +34,7 @@ async def cari_getir(cari_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_can_write_module("cari"))])
 async def cari_ekle(cari: CariCreate):
     """Create a new customer account"""
     try:
@@ -56,7 +57,7 @@ async def cari_ekle(cari: CariCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{cari_id}")
+@router.put("/{cari_id}", dependencies=[Depends(require_can_write_module("cari"))])
 async def cari_guncelle(cari_id: int, cari: CariUpdate):
     """Update a customer account"""
     try:
@@ -79,7 +80,7 @@ async def cari_guncelle(cari_id: int, cari: CariUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{cari_id}")
+@router.delete("/{cari_id}", dependencies=[Depends(require_can_write_module("cari"))])
 async def cari_sil(cari_id: int):
     """Delete a customer account"""
     try:
@@ -132,7 +133,7 @@ async def cari_sonraki_kod():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/ekle-tc-kontrolu-ile")
+@router.post("/ekle-tc-kontrolu-ile", dependencies=[Depends(require_can_write_module("cari"))])
 async def cari_ekle_tc_kontrolu_ile(cari: CariCreate):
     """Create customer account with TC identity number check"""
     try:

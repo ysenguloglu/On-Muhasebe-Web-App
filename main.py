@@ -9,6 +9,7 @@ import sys
 
 from db_instance import db
 from routes import router as routes_router
+from api.auth import router as auth_router
 from api.stok import router as stok_router
 from api.cari import router as cari_router
 from api.is_evraki import router as is_evraki_router
@@ -29,6 +30,10 @@ async def startup_event():
         print("🔄 Veritabanı tabloları kontrol ediliyor...")
         db.db_conn.init_database()
         print("✅ Veritabanı hazır!")
+        # Hiç kullanıcı yoksa varsayılan admin (admin / admin123) oluştur
+        ok, msg = db.auth.seed_default_admin()
+        if ok:
+            print("✅ " + msg)
     except Exception as e:
         print(f"⚠️ Veritabanı başlatma hatası (uygulama devam ediyor): {e}")
         import traceback
@@ -76,8 +81,8 @@ if not os.path.exists(static_dir):
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Include routers
-# Excel router'ı stok router'ından önce include et (daha spesifik route'lar önce)
+# Include routers (auth login herkese açık, diğer API'ler token ister)
+app.include_router(auth_router)
 app.include_router(routes_router)
 app.include_router(excel_router)
 app.include_router(stok_router)

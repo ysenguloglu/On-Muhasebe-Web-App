@@ -1,11 +1,12 @@
 """
 İş Prosesi API endpoints
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models import IsProsesiCreate, IsProsesiUpdate, IsProsesiMaddeCreate, IsProsesiMaddeUpdate
 from db_instance import db
+from api.auth import get_current_user, require_can_write_module
 
-router = APIRouter(prefix="/api/is-prosesi", tags=["is-prosesi"])
+router = APIRouter(prefix="/api/is-prosesi", tags=["is-prosesi"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("")
@@ -41,7 +42,7 @@ async def is_prosesi_getir(proses_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_can_write_module("is_prosesi"))])
 async def is_prosesi_ekle(proses: IsProsesiCreate):
     """Create a new work process"""
     try:
@@ -78,7 +79,7 @@ async def is_prosesi_ekle(proses: IsProsesiCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{proses_id}")
+@router.put("/{proses_id}", dependencies=[Depends(require_can_write_module("is_prosesi"))])
 async def is_prosesi_guncelle(proses_id: int, proses: IsProsesiUpdate):
     """Update a work process"""
     try:
@@ -105,7 +106,7 @@ async def is_prosesi_guncelle(proses_id: int, proses: IsProsesiUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{proses_id}")
+@router.delete("/{proses_id}", dependencies=[Depends(require_can_write_module("is_prosesi"))])
 async def is_prosesi_sil(proses_id: int):
     """Delete a work process"""
     try:
@@ -134,7 +135,7 @@ async def is_prosesi_maddeleri_getir(proses_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{proses_id}/maddeler")
+@router.post("/{proses_id}/maddeler", dependencies=[Depends(require_can_write_module("is_prosesi"))])
 async def is_prosesi_madde_ekle(proses_id: int, madde: IsProsesiMaddeCreate):
     """Add a new item to a work process"""
     try:
@@ -156,7 +157,7 @@ async def is_prosesi_madde_ekle(proses_id: int, madde: IsProsesiMaddeCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/maddeler/{madde_id}")
+@router.put("/maddeler/{madde_id}", dependencies=[Depends(require_can_write_module("is_prosesi"))])
 async def is_prosesi_madde_guncelle(madde_id: int, madde: IsProsesiMaddeUpdate):
     """Update a work process item"""
     try:
@@ -179,7 +180,7 @@ async def is_prosesi_madde_guncelle(madde_id: int, madde: IsProsesiMaddeUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/maddeler/{madde_id}")
+@router.delete("/maddeler/{madde_id}", dependencies=[Depends(require_can_write_module("is_prosesi"))])
 async def is_prosesi_madde_sil(madde_id: int):
     """Delete a work process item"""
     try:
@@ -195,7 +196,7 @@ async def is_prosesi_madde_sil(madde_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/maddeler/{madde_id}/tamamla")
+@router.patch("/maddeler/{madde_id}/tamamla", dependencies=[Depends(require_can_write_module("is_prosesi"))])
 async def is_prosesi_madde_tamamla(madde_id: int, tamamlandi: bool = True):
     """Mark a work process item as completed or not"""
     try:

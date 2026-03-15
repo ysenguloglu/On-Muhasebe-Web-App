@@ -8,12 +8,13 @@ from datetime import date
 from collections import defaultdict
 from typing import Tuple
 
-from fastapi import APIRouter, HTTPException, Header, Query
+from fastapi import APIRouter, HTTPException, Header, Query, Depends
 
 from db_instance import db
 from api.pdf_email import aylik_rapor_pdf_olustur, rapor_email_gonder
+from api.auth import get_current_user, require_can_write_module
 
-router = APIRouter(prefix="/api/aylik-rapor", tags=["aylik-rapor"])
+router = APIRouter(prefix="/api/aylik-rapor", tags=["aylik-rapor"], dependencies=[Depends(get_current_user)])
 
 
 def _onceki_ay() -> Tuple[int, int]:
@@ -103,7 +104,7 @@ async def aylik_rapor_cron_job():
         traceback.print_exc()
 
 
-@router.post("/gonder")
+@router.post("/gonder", dependencies=[Depends(require_can_write_module("aylik_rapor"))])
 async def aylik_rapor_gonder(
     ay: int = Query(None, description="Ay (1-12). Verilmezse önceki ay."),
     yil: int = Query(None, description="Yıl. Verilmezse önceki ayın yılı."),

@@ -129,12 +129,37 @@
     </style>
 </head>
 <body>
+    <script>
+        (function(){
+            var token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/login'; return; }
+            var orig = window.fetch;
+            window.fetch = function(url, opts) {
+                opts = opts || {};
+                if (token) {
+                    opts.headers = opts.headers || {};
+                    if (opts.headers instanceof Headers) opts.headers.append('Authorization', 'Bearer ' + token);
+                    else opts.headers['Authorization'] = 'Bearer ' + token;
+                }
+                return orig.call(this, url, opts).then(function(res) {
+                    if (res.status === 401) {
+                        localStorage.removeItem('token'); localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }
+                    return res;
+                });
+            };
+        })();
+    </script>
     <div class="container">
-        <a href="/" class="back-btn">← Ana Sayfa</a>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="/" class="back-btn">← Ana Sayfa</a>
+            <a href="#" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;" style="color: #e74c3c; text-decoration: none; font-size: 14px;">Çıkış</a>
+        </div>
         <div class="header-actions">
             <h1 style="margin: 0;">📦 Stok Yönetimi</h1>
             <div class="excel-buttons">
-                <div class="file-input-wrapper">
+                <div class="file-input-wrapper admin-only">
                     <button type="button" class="btn-info" onclick="document.getElementById('excelFileInput').click()">
                         📊 Excel'den İçe Aktar
                     </button>
@@ -150,7 +175,7 @@
             <input type="text" id="search" placeholder="Ürün ara..." onkeyup="loadStok()">
         </div>
         
-        <form id="stokForm">
+        <form id="stokForm" class="admin-only">
             <div class="form-group">
                 <label>Ürün Kodu</label>
                 <input type="text" id="urun_kodu">
@@ -198,7 +223,7 @@
                     <th>Birim</th>
                     <th>Miktar</th>
                     <th>Fiyat</th>
-                    <th>İşlemler</th>
+                    <th class="admin-only">İşlemler</th>
                 </tr>
             </thead>
             <tbody id="stokTableBody">
@@ -209,6 +234,16 @@
     <script>
         const API_BASE = window.location.origin;
         let selectedId = null;
+        
+        function getViewerMode() {
+            try {
+                var u = JSON.parse(localStorage.getItem('user') || 'null');
+                return u && u.role === 'user';
+            } catch (e) { return false; }
+        }
+        function applyViewerMode() {
+            if (getViewerMode()) document.querySelectorAll('.admin-only').forEach(function(el) { el.style.display = 'none'; });
+        }
         
         async function loadStok() {
             const search = document.getElementById('search').value;
@@ -230,13 +265,14 @@
                             <td>${item.birim || 'Adet'}</td>
                             <td>${item.stok_miktari || 0}</td>
                             <td>${(item.birim_fiyat || 0).toFixed(2)} ₺</td>
-                            <td>
+                            <td class="admin-only">
                                 <button onclick="editStok(${item.id})">✏️</button>
                                 <button class="btn-danger" onclick="deleteStok(${item.id})">🗑️</button>
                             </td>
                         `;
                     });
                 }
+                applyViewerMode();
             } catch (error) {
                 alert('Hata: ' + error.message);
             }
@@ -466,6 +502,7 @@
         
         // Sayfa yüklendiğinde stokları getir
         loadStok();
+        applyViewerMode();
     </script>
 </body>
 </html>

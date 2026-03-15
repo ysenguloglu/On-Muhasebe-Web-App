@@ -186,13 +186,38 @@
     </style>
 </head>
 <body>
+    <script>
+        (function(){
+            var token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/login'; return; }
+            var orig = window.fetch;
+            window.fetch = function(url, opts) {
+                opts = opts || {};
+                if (token) {
+                    opts.headers = opts.headers || {};
+                    if (opts.headers instanceof Headers) opts.headers.append('Authorization', 'Bearer ' + token);
+                    else opts.headers['Authorization'] = 'Bearer ' + token;
+                }
+                return orig.call(this, url, opts).then(function(res) {
+                    if (res.status === 401) {
+                        localStorage.removeItem('token'); localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }
+                    return res;
+                });
+            };
+        })();
+    </script>
     <div class="container">
         <div class="header">
             <h1>👥 Cari Hesap Yönetimi</h1>
-            <a href="/" class="back-btn">← Ana Sayfa</a>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="/" class="back-btn">← Ana Sayfa</a>
+                <a href="#" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;" style="color: #e74c3c; text-decoration: none; font-size: 14px;">Çıkış</a>
+            </div>
         </div>
         
-        <form id="cariForm">
+        <form id="cariForm" class="admin-only">
             <div class="form-grid">
                 <div class="form-group">
                     <label>Cari Kodu</label>
@@ -275,7 +300,7 @@
                         <th>Vergi No</th>
                         <th>Firma Tipi</th>
                         <th>Bakiye</th>
-                        <th>İşlemler</th>
+                        <th class="admin-only">İşlemler</th>
                     </tr>
                 </thead>
                 <tbody id="cariTableBody">
@@ -287,6 +312,16 @@
     <script>
         const API_BASE = window.location.origin;
         let selectedId = null;
+        
+        function getViewerMode() {
+            try {
+                var u = JSON.parse(localStorage.getItem('user') || 'null');
+                return u && u.role === 'user';
+            } catch (e) { return false; }
+        }
+        function applyViewerMode() {
+            if (getViewerMode()) document.querySelectorAll('.admin-only').forEach(function(el) { el.style.display = 'none'; });
+        }
         
         async function loadCari() {
             const search = document.getElementById('search').value;
@@ -315,7 +350,7 @@
                             <td>${item.vergi_no || '-'}</td>
                             <td>${item.firma_tipi || 'Şahıs'}</td>
                             <td class="${bakiyeClass}">${bakiye.toFixed(2)} ₺</td>
-                            <td>
+                            <td class="admin-only">
                                 <button onclick="editCari(${item.id})">✏️</button>
                                 <button class="btn-danger" onclick="deleteCari(${item.id})">🗑️</button>
                             </td>
@@ -323,6 +358,7 @@
                         tbody.appendChild(row);
                     });
                 }
+                applyViewerMode();
             } catch (error) {
                 alert('Hata: ' + error.message);
             }
@@ -431,6 +467,7 @@
         }
         
         loadCari();
+        applyViewerMode();
     </script>
 </body>
 </html>

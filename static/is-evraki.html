@@ -319,10 +319,35 @@
     </style>
 </head>
 <body>
+    <script>
+        (function(){
+            var token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/login'; return; }
+            var orig = window.fetch;
+            window.fetch = function(url, opts) {
+                opts = opts || {};
+                if (token) {
+                    opts.headers = opts.headers || {};
+                    if (opts.headers instanceof Headers) opts.headers.append('Authorization', 'Bearer ' + token);
+                    else opts.headers['Authorization'] = 'Bearer ' + token;
+                }
+                return orig.call(this, url, opts).then(function(res) {
+                    if (res.status === 401) {
+                        localStorage.removeItem('token'); localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }
+                    return res;
+                });
+            };
+        })();
+    </script>
     <div class="container">
         <div class="header">
             <h1>📄 İş Evrakı Oluştur</h1>
-            <a href="/" class="back-btn">← Ana Sayfa</a>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="/" class="back-btn">← Ana Sayfa</a>
+                <a href="#" onclick="localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login'; return false;" style="color: #e74c3c; text-decoration: none; font-size: 14px;">Çıkış</a>
+            </div>
         </div>
         
         <form id="isEvrakiForm">

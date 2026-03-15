@@ -7,6 +7,7 @@ from .db_stok import StokDB
 from .db_cari import CariDB
 from .db_is_evraki import IsEvrakiDB
 from .db_is_prosesi import IsProsesiDB
+from .db_auth import AuthDB
 
 
 class Database:
@@ -33,6 +34,7 @@ class Database:
         self.cari = CariDB(self.db_conn)
         self.is_evraki = IsEvrakiDB(self.db_conn)
         self.is_prosesi = IsProsesiDB(self.db_conn)
+        self.auth = AuthDB(self.db_conn)
     
     # ========== STOK İŞLEMLERİ (Delegasyon) ==========
     

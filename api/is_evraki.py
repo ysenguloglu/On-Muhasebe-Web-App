@@ -1,16 +1,17 @@
 """
 İş Evrakı (Work Order) API endpoints
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 import json
 from decimal import Decimal
 from datetime import date, datetime
 
 from models import IsEvrakiCreate, IsEvrakiCreateWithEmail, IsEvrakiUpdate, IsEvrakiUpdateWithEmail
 from api.pdf_email import pdf_olustur_api, email_gonder_api
+from api.auth import get_current_user, require_can_write_module
 from db_instance import db
 
-router = APIRouter(prefix="/api/is-evraki", tags=["is-evraki"])
+router = APIRouter(prefix="/api/is-evraki", tags=["is-evraki"], dependencies=[Depends(get_current_user)])
 
 # Türkçe başlık formatı: İlk harf büyük, diğerleri küçük (İşçilik, İŞÇİLİK -> İşçilik)
 _TR_UPPER = {'i': 'İ', 'ı': 'I'}
@@ -101,7 +102,7 @@ async def is_evraki_getir(evrak_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_can_write_module("is_evraki"))])
 async def is_evraki_ekle(evrak: IsEvrakiCreate):
     """Create a new work order"""
     try:
@@ -126,7 +127,7 @@ async def is_evraki_ekle(evrak: IsEvrakiCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/kaydet-ve-gonder")
+@router.post("/kaydet-ve-gonder", dependencies=[Depends(require_can_write_module("is_evraki"))])
 async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
     """İş evrakını kaydet, PDF oluştur ve e-posta gönder"""
     import os
@@ -232,7 +233,7 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{evrak_id}")
+@router.put("/{evrak_id}", dependencies=[Depends(require_can_write_module("is_evraki"))])
 async def is_evraki_guncelle(evrak_id: int, evrak: IsEvrakiUpdate):
     """Update a work order"""
     try:
@@ -257,7 +258,7 @@ async def is_evraki_guncelle(evrak_id: int, evrak: IsEvrakiUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/guncelle-ve-gonder/{evrak_id}")
+@router.put("/guncelle-ve-gonder/{evrak_id}", dependencies=[Depends(require_can_write_module("is_evraki"))])
 async def is_evraki_guncelle_ve_gonder(evrak_id: int, evrak: IsEvrakiUpdateWithEmail):
     """İş evrakını güncelle, PDF oluştur ve e-posta gönder"""
     import os
@@ -345,7 +346,7 @@ async def is_evraki_guncelle_ve_gonder(evrak_id: int, evrak: IsEvrakiUpdateWithE
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/gonder/{evrak_id}")
+@router.post("/gonder/{evrak_id}", dependencies=[Depends(require_can_write_module("is_evraki"))])
 async def is_evraki_gonder(evrak_id: int):
     """Kayıtlı iş evrakını e-posta ile gönder"""
     import os
@@ -434,7 +435,7 @@ async def is_evraki_gonder(evrak_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{evrak_id}")
+@router.delete("/{evrak_id}", dependencies=[Depends(require_can_write_module("is_evraki"))])
 async def is_evraki_sil(evrak_id: int):
     """Delete a work order"""
     try:
