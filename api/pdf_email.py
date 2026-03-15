@@ -39,9 +39,10 @@ def _send_email_smtp(
     attachment_path: Optional[str] = None,
     attachment_filename: Optional[str] = None,
 ) -> None:
-    """SMTP ile e-posta gönderir (mail.com veya herhangi bir SMTP)."""
+    """SMTP ile e-posta gönderir (mail.com veya herhangi bir SMTP). Zaman aşımı ve 465 SSL destekli."""
     smtp_server = os.getenv("SMTP_SERVER", "smtp.mail.com")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_timeout = int(os.getenv("SMTP_TIMEOUT", "25"))
     smtp_user = os.getenv("SMTP_USER", "sinankirtikli@mail.com")
     smtp_password = os.getenv("SMTP_PASSWORD", "")
     email_from = os.getenv("EMAIL_FROM", "sinankirtikli@mail.com")
@@ -65,10 +66,16 @@ def _send_email_smtp(
                 filename=attachment_filename or os.path.basename(attachment_path),
             )
             msg.attach(part)
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.sendmail(email_from, to_addrs, msg.as_string(policy=SMTPPolicy))
+    payload = msg.as_string(policy=SMTPPolicy)
+    if smtp_port == 465:
+        with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=smtp_timeout) as server:
+            server.login(smtp_user, smtp_password)
+            server.sendmail(email_from, to_addrs, payload)
+    else:
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=smtp_timeout) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.sendmail(email_from, to_addrs, payload)
 
 
 async def pdf_olustur_api(evrak: IsEvrakiCreateWithEmail, urunler: List[Dict]) -> Optional[str]:
