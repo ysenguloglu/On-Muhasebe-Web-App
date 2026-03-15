@@ -37,11 +37,11 @@ def _send_email_resend(
     """Resend API ile e-posta gönderir. RESEND_API_KEY ve EMAIL_FROM .env'de olmalı."""
     import resend
     api_key = os.getenv("RESEND_API_KEY", "")
-    email_from = os.getenv("EMAIL_FROM", "")
+    email_from = os.getenv("EMAIL_FROM", "Acme <onboarding@resend.dev>")
     if not api_key:
         raise Exception("RESEND_API_KEY environment variable tanımlı olmalı")
     if not email_from:
-        raise Exception("EMAIL_FROM environment variable tanımlı olmalı")
+        email_from = "Acme <onboarding@resend.dev>"
     if isinstance(to_addrs, str):
         to_addrs = [to_addrs]
     resend.api_key = api_key
