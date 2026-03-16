@@ -293,6 +293,37 @@ class AracDB:
         self.db.close()
         return [dict(r) for r in rows] if rows else []
 
+    def belge_takip_listele(
+        self,
+        arac_plakasi: Optional[str] = None,
+        belge_turu: Optional[str] = None,
+    ) -> List[Dict]:
+        """Tüm araç belgelerini bitiş tarihine göre listeler (en yakın önce). Takip sekmesi için."""
+        conn = self.db.connect()
+        cursor = self.db._get_cursor(conn)
+        conditions = []
+        params = []
+        if arac_plakasi and arac_plakasi.strip():
+            conditions.append("a.arac_plakasi LIKE ?")
+            params.append("%" + arac_plakasi.strip() + "%")
+        if belge_turu and belge_turu.strip():
+            conditions.append("b.belge_turu = ?")
+            params.append(belge_turu.strip())
+        where = " AND ".join(conditions) if conditions else "1=1"
+        q = """
+            SELECT b.id, b.arac_id, b.belge_turu, b.duzenlenme_tarihi, b.bitis_tarihi,
+                   a.arac_plakasi
+            FROM arac_belge b
+            JOIN arac a ON a.id = b.arac_id
+            WHERE """ + where + """
+            ORDER BY b.bitis_tarihi ASC
+        """
+        q = self.db._convert_placeholders(q)
+        cursor.execute(q, tuple(params))
+        rows = cursor.fetchall()
+        self.db.close()
+        return [dict(r) for r in rows] if rows else []
+
     # ---------- Bakım ----------
     def bakim_ekle(
         self,

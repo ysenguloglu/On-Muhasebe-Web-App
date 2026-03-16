@@ -177,6 +177,9 @@ class Database:
     def belge_suresi_dolacak_listele(self, *args, **kwargs):
         return self.arac.belge_suresi_dolacak_listele(*args, **kwargs)
 
+    def belge_takip_listele(self, *args, **kwargs):
+        return self.arac.belge_takip_listele(*args, **kwargs)
+
     def bakim_ekle(self, *args, **kwargs):
         return self.arac.bakim_ekle(*args, **kwargs)
 

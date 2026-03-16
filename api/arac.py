@@ -41,6 +41,19 @@ async def belgeler_suresi_dolacak(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/belgeler/takip")
+async def belgeler_takip(
+    arac_plakasi: Optional[str] = None,
+    belge_turu: Optional[str] = None,
+):
+    """Belge ve son tarih takibi: tüm belgeler bitiş tarihine göre (en yakın önce)."""
+    try:
+        liste = db.belge_takip_listele(arac_plakasi=arac_plakasi, belge_turu=belge_turu)
+        return {"success": True, "data": liste, "count": len(liste)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{arac_id}")
 async def arac_getir(arac_id: int):
     """Tek araç detayı."""
