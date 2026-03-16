@@ -12,9 +12,9 @@ from fastapi import APIRouter, HTTPException, Header, Query, Depends
 
 from db_instance import db
 from api.pdf_email import aylik_rapor_pdf_olustur, rapor_email_gonder
-from api.auth import get_current_user, require_can_write_module
+from api.auth import get_current_user, require_can_write_module, require_not_sofor
 
-router = APIRouter(prefix="/api/aylik-rapor", tags=["aylik-rapor"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/api/aylik-rapor", tags=["aylik-rapor"], dependencies=[Depends(get_current_user), Depends(require_not_sofor)])
 
 
 def _onceki_ay() -> Tuple[int, int]:

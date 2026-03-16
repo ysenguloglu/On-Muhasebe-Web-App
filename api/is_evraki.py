@@ -8,10 +8,10 @@ from datetime import date, datetime
 
 from models import IsEvrakiCreate, IsEvrakiCreateWithEmail, IsEvrakiUpdate, IsEvrakiUpdateWithEmail
 from api.pdf_email import pdf_olustur_api, email_gonder_api
-from api.auth import get_current_user, require_can_write_module
+from api.auth import get_current_user, require_can_write_module, require_not_sofor
 from db_instance import db
 
-router = APIRouter(prefix="/api/is-evraki", tags=["is-evraki"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/api/is-evraki", tags=["is-evraki"], dependencies=[Depends(get_current_user), Depends(require_not_sofor)])
 
 # Türkçe başlık formatı: İlk harf büyük, diğerleri küçük (İşçilik, İŞÇİLİK -> İşçilik)
 _TR_UPPER = {'i': 'İ', 'ı': 'I'}

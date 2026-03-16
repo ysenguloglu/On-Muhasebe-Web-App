@@ -5,9 +5,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from models import CariCreate, CariUpdate
 from db_instance import db
-from api.auth import get_current_user, require_can_write_module
+from api.auth import get_current_user, require_can_write_module, require_not_sofor
 
-router = APIRouter(prefix="/api/cari", tags=["cari"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/api/cari", tags=["cari"], dependencies=[Depends(get_current_user), Depends(require_not_sofor)])
 
 
 @router.get("")

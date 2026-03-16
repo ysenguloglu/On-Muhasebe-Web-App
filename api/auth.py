@@ -118,6 +118,13 @@ def require_can_write_arac(current_user: dict = Depends(get_current_user)) -> di
     raise HTTPException(status_code=403, detail="Araç modülünde değişiklik yapma yetkiniz yok.")
 
 
+def require_not_sofor(current_user: dict = Depends(get_current_user)) -> dict:
+    """Şoför rolü sadece Araçlar modülünü görebilir; diğer modüllere 403."""
+    if (current_user.get("role") or "").strip().lower() == "sofor":
+        raise HTTPException(status_code=403, detail="Bu modüle erişim yetkiniz yok. Sadece Araçlar modülünü görüntüleyebilirsiniz.")
+    return current_user
+
+
 @router.post("/login")
 async def login(body: LoginRequest):
     """Kullanıcı adı ve şifre ile giriş. Token ve kullanıcı bilgisi döner."""

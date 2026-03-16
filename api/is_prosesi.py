@@ -4,9 +4,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models import IsProsesiCreate, IsProsesiUpdate, IsProsesiMaddeCreate, IsProsesiMaddeUpdate
 from db_instance import db
-from api.auth import get_current_user, require_can_write_module
+from api.auth import get_current_user, require_can_write_module, require_not_sofor
 
-router = APIRouter(prefix="/api/is-prosesi", tags=["is-prosesi"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/api/is-prosesi", tags=["is-prosesi"], dependencies=[Depends(get_current_user), Depends(require_not_sofor)])
 
 
 @router.get("")

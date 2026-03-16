@@ -4,10 +4,12 @@ FastAPI web service for Ön Muhasebe application
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 import os
 import sys
 
 from db_instance import db
+from api.auth import decode_token
 from routes import router as routes_router
 from api.auth import router as auth_router
 from api.stok import router as stok_router
@@ -65,6 +67,19 @@ async def shutdown_event():
             s.shutdown(wait=False)
         except Exception:
             pass
+
+# Şoför rolü: /docs ve /redoc erişemez (token varsa kontrol)
+@app.middleware("http")
+async def block_sofor_docs(request, call_next):
+    path = request.scope.get("path", "")
+    if path in ("/docs", "/redoc", "/openapi.json"):
+        auth = request.headers.get("authorization") or request.headers.get("Authorization")
+        if auth and auth.startswith("Bearer "):
+            token = auth[7:]
+            payload = decode_token(token)
+            if payload and (payload.get("role") or "").strip().lower() == "sofor":
+                return PlainTextResponse("Bu sayfaya erişim yetkiniz yok.", status_code=403)
+    return await call_next(request)
 
 # CORS middleware
 app.add_middleware(

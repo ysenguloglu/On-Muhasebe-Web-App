@@ -173,37 +173,37 @@ async def root():
             </div>
             
             <div class="cards">
-                <a href="/stok" class="card">
+                <a href="/stok" class="card" data-module="stok">
                     <div class="card-icon">📦</div>
                     <h2>Stok Yönetimi</h2>
                     <p>Ürün ekleme, güncelleme, silme ve stok takibi yapabilirsiniz.</p>
                 </a>
                 
-                <a href="/cari" class="card">
+                <a href="/cari" class="card" data-module="cari">
                     <div class="card-icon">👥</div>
                     <h2>Cari Hesaplar</h2>
                     <p>Müşteri ve tedarikçi bilgilerini yönetebilirsiniz.</p>
                 </a>
                 
-                <a href="/is-evraki" class="card">
+                <a href="/is-evraki" class="card" data-module="is-evraki">
                     <div class="card-icon">📄</div>
                     <h2>İş Evrakı</h2>
                     <p>İş emirleri oluşturup yönetebilirsiniz.</p>
                 </a>
                 
-                <a href="/is-prosesi" class="card">
+                <a href="/is-prosesi" class="card" data-module="is-prosesi">
                     <div class="card-icon">⚙️</div>
                     <h2>İş Prosesleri</h2>
                     <p>İş proseslerini tanımlayıp takip edebilirsiniz.</p>
                 </a>
                 
-                <a href="/araclar" class="card">
+                <a href="/araclar" class="card" data-module="araclar">
                     <div class="card-icon">🚛</div>
                     <h2>Araçlar</h2>
                     <p>Araç kartları, belge ve bakım takibi.</p>
                 </a>
                 
-                <a href="/kullanicilar" class="card">
+                <a href="/kullanicilar" class="card" data-module="kullanicilar">
                     <div class="card-icon">👤</div>
                     <h2>Kullanıcı Yönetimi</h2>
                     <p>Yeni kullanıcı ekleyin (sadece admin).</p>
@@ -211,7 +211,7 @@ async def root():
             </div>
             
             <div class="footer" id="mainFooter">
-                <span class="footer-docs admin-only-link">
+                <span class="footer-docs admin-only-link sofor-hide-docs">
                     <a href="/docs">API Dokümantasyonu</a>
                     <a href="/redoc">ReDoc</a>
                 </span>
@@ -224,6 +224,12 @@ async def root():
                     if (u && u.role !== 'admin') {
                         var el = document.querySelector('.admin-only-link');
                         if (el) el.style.display = 'none';
+                    }
+                    if (u && (u.role || '').toLowerCase() === 'sofor') {
+                        document.querySelectorAll('.card[data-module]').forEach(function(c) {
+                            if (c.getAttribute('data-module') !== 'araclar') c.style.display = 'none';
+                        });
+                        document.querySelectorAll('.sofor-hide-docs').forEach(function(el) { el.style.display = 'none'; });
                     }
                 } catch(e) {}
             })();

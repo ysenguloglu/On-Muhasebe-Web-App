@@ -7,9 +7,9 @@ from models import (
     StokCreate, StokUpdate, StokMiktarAzalt, StokMiktarAzaltBatch
 )
 from db_instance import db
-from api.auth import get_current_user, require_can_write_module
+from api.auth import get_current_user, require_can_write_module, require_not_sofor
 
-router = APIRouter(prefix="/api/stok", tags=["stok"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/api/stok", tags=["stok"], dependencies=[Depends(get_current_user), Depends(require_not_sofor)])
 
 
 @router.get("")
