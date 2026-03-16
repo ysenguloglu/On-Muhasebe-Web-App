@@ -178,3 +178,61 @@ class IsProsesiMaddeUpdate(BaseModel):
     aciklama: Optional[str] = ""
     kullanilan_malzemeler: Optional[str] = ""
     tamamlandi: Optional[bool] = False
+
+
+# ---------- Araç Yönetimi (Modül 2) ----------
+# Sabitler (API dokümantasyonu için)
+ARAC_TIPLERI = ("çekici", "dorse", "diğer")
+ARAC_DURUMLARI = ("aktif", "bakımda", "pasif")
+ARAC_BELGE_TURLERI = (
+    "araç muayenesi",
+    "trafik sigortası",
+    "kasko",
+    "egzoz muayenesi",
+    "ADR sertifikası",
+    "araç ruhsatı",
+)
+ARAC_BAKIM_TURLERI = ("yağ değişimi", "fren kontrolü", "lastik değişimi", "genel bakım")
+
+
+class AracCreate(BaseModel):
+    arac_plakasi: str
+    arac_tipi: Optional[str] = "diğer"
+    marka: Optional[str] = ""
+    model: Optional[str] = ""
+    model_yili: Optional[int] = None
+    sasi_no: Optional[str] = ""
+    motor_no: Optional[str] = ""
+    guncel_km: Optional[float] = 0
+    alis_tarihi: Optional[str] = None
+    alis_fiyati: Optional[float] = None
+    durum: Optional[str] = "aktif"
+
+
+class AracUpdate(BaseModel):
+    arac_plakasi: str
+    arac_tipi: Optional[str] = "diğer"
+    marka: Optional[str] = ""
+    model: Optional[str] = ""
+    model_yili: Optional[int] = None
+    sasi_no: Optional[str] = ""
+    motor_no: Optional[str] = ""
+    guncel_km: Optional[float] = 0
+    alis_tarihi: Optional[str] = None
+    alis_fiyati: Optional[float] = None
+    durum: Optional[str] = "aktif"
+
+
+class AracBelgeCreate(BaseModel):
+    belge_turu: str
+    duzenlenme_tarihi: Optional[str] = None
+    bitis_tarihi: str
+    belge_dosya_path: Optional[str] = None
+
+
+class AracBakimCreate(BaseModel):
+    bakim_turu: str
+    aciklama: Optional[str] = ""
+    bakim_tarihi: Optional[str] = ""
+    bakim_km: Optional[float] = None
+    maliyet: Optional[float] = None

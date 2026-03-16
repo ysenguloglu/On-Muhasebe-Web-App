@@ -234,14 +234,14 @@ class DatabaseConnection:
             except Exception:
                 conn.rollback()
 
-            # Kullanıcılar tablosu (roller: admin, user)
+            # Kullanıcılar tablosu (roller: admin, user, operasyon_yoneticisi, sofor, servis_teknisyeni)
             try:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS users (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         username VARCHAR(100) NOT NULL UNIQUE,
                         password_hash VARCHAR(255) NOT NULL,
-                        role VARCHAR(20) NOT NULL DEFAULT 'user',
+                        role VARCHAR(30) NOT NULL DEFAULT 'user',
                         olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """)
@@ -250,11 +250,73 @@ class DatabaseConnection:
                 conn.rollback()
                 print(f"⚠️ Users tablosu (devam): {e}")
 
+            # Araç Yönetimi (Modül 2): arac, arac_belge, arac_bakim
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS arac (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        arac_plakasi VARCHAR(20) NOT NULL UNIQUE,
+                        arac_tipi VARCHAR(20) NOT NULL DEFAULT 'diğer',
+                        marka VARCHAR(100),
+                        model VARCHAR(100),
+                        model_yili INT,
+                        sasi_no VARCHAR(17),
+                        motor_no VARCHAR(100),
+                        guncel_km DECIMAL(12, 2) DEFAULT 0,
+                        alis_tarihi DATE,
+                        alis_fiyati DECIMAL(12, 2),
+                        durum VARCHAR(20) NOT NULL DEFAULT 'aktif',
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """)
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print(f"⚠️ arac tablosu (devam): {e}")
+
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS arac_belge (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        arac_id INT NOT NULL,
+                        belge_turu VARCHAR(50) NOT NULL,
+                        duzenlenme_tarihi DATE,
+                        bitis_tarihi DATE NOT NULL,
+                        belge_dosya_path VARCHAR(500),
+                        kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (arac_id) REFERENCES arac(id) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """)
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print(f"⚠️ arac_belge tablosu (devam): {e}")
+
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS arac_bakim (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        arac_id INT NOT NULL,
+                        bakim_turu VARCHAR(50) NOT NULL,
+                        aciklama TEXT,
+                        bakim_tarihi DATE NOT NULL,
+                        bakim_km DECIMAL(12, 2),
+                        maliyet DECIMAL(12, 2),
+                        kayit_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (arac_id) REFERENCES arac(id) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """)
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print(f"⚠️ arac_bakim tablosu (devam): {e}")
+
             try:
                 cursor.execute("""
                     SELECT table_name FROM information_schema.tables
                     WHERE table_schema = DATABASE()
-                    AND table_name IN ('stok', 'cari', 'is_evraki', 'is_prosesi', 'is_prosesi_maddeleri', 'users')
+                    AND table_name IN ('stok', 'cari', 'is_evraki', 'is_prosesi', 'is_prosesi_maddeleri', 'users', 'arac', 'arac_belge', 'arac_bakim')
                 """)
                 rows = cursor.fetchall()
                 names = [r[0] for r in rows] if rows else []

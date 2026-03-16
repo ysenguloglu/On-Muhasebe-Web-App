@@ -7,6 +7,7 @@ from .db_stok import StokDB
 from .db_cari import CariDB
 from .db_is_evraki import IsEvrakiDB
 from .db_is_prosesi import IsProsesiDB
+from .db_arac import AracDB
 from .db_auth import AuthDB
 
 
@@ -34,6 +35,7 @@ class Database:
         self.cari = CariDB(self.db_conn)
         self.is_evraki = IsEvrakiDB(self.db_conn)
         self.is_prosesi = IsProsesiDB(self.db_conn)
+        self.arac = AracDB(self.db_conn)
         self.auth = AuthDB(self.db_conn)
     
     # ========== STOK İŞLEMLERİ (Delegasyon) ==========
@@ -148,7 +150,42 @@ class Database:
     
     def is_prosesi_tamamla_madde(self, *args, **kwargs):
         return self.is_prosesi.is_prosesi_tamamla_madde(*args, **kwargs)
-    
+
+    # ========== ARAÇ YÖNETİMİ (Modül 2 - Delegasyon) ==========
+
+    def arac_ekle(self, *args, **kwargs):
+        return self.arac.arac_ekle(*args, **kwargs)
+
+    def arac_guncelle(self, *args, **kwargs):
+        return self.arac.arac_guncelle(*args, **kwargs)
+
+    def arac_sil(self, *args, **kwargs):
+        return self.arac.arac_sil(*args, **kwargs)
+
+    def arac_listele(self, *args, **kwargs):
+        return self.arac.arac_listele(*args, **kwargs)
+
+    def arac_getir(self, *args, **kwargs):
+        return self.arac.arac_getir(*args, **kwargs)
+
+    def belge_ekle(self, *args, **kwargs):
+        return self.arac.belge_ekle(*args, **kwargs)
+
+    def belge_listele(self, *args, **kwargs):
+        return self.arac.belge_listele(*args, **kwargs)
+
+    def belge_suresi_dolacak_listele(self, *args, **kwargs):
+        return self.arac.belge_suresi_dolacak_listele(*args, **kwargs)
+
+    def bakim_ekle(self, *args, **kwargs):
+        return self.arac.bakim_ekle(*args, **kwargs)
+
+    def bakim_listele(self, *args, **kwargs):
+        return self.arac.bakim_listele(*args, **kwargs)
+
+    def bakim_uyarilari_hesapla(self, *args, **kwargs):
+        return self.arac.bakim_uyarilari_hesapla(*args, **kwargs)
+
     # ========== BAĞLANTI YÖNETİMİ (Delegasyon) ==========
     
     def connect(self):

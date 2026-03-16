@@ -101,6 +101,23 @@ def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     return current_user
 
 
+# Araç modülü yetkileri: Admin + Operasyon yöneticisi = tüm işlemler; Şoför = sadece görüntüleme; Servis teknisyeni = erişim yok
+def require_can_read_arac(current_user: dict = Depends(get_current_user)) -> dict:
+    """Araç modülüne okuma yetkisi: admin, operasyon_yoneticisi, sofor."""
+    role = (current_user.get("role") or "").strip().lower()
+    if role in ("admin", "operasyon_yoneticisi", "sofor"):
+        return current_user
+    raise HTTPException(status_code=403, detail="Araç modülüne erişim yetkiniz yok.")
+
+
+def require_can_write_arac(current_user: dict = Depends(get_current_user)) -> dict:
+    """Araç modülüne yazma yetkisi: admin, operasyon_yoneticisi."""
+    role = (current_user.get("role") or "").strip().lower()
+    if role in ("admin", "operasyon_yoneticisi"):
+        return current_user
+    raise HTTPException(status_code=403, detail="Araç modülünde değişiklik yapma yetkiniz yok.")
+
+
 @router.post("/login")
 async def login(body: LoginRequest):
     """Kullanıcı adı ve şifre ile giriş. Token ve kullanıcı bilgisi döner."""
@@ -143,8 +160,9 @@ async def create_user(
 ):
     """Yeni kullanıcı oluşturur (sadece admin)."""
     role = (body.role or "user").strip().lower()
-    if role not in ("admin", "user"):
-        raise HTTPException(status_code=400, detail="Rol 'admin' veya 'user' olmalıdır.")
+    allowed_roles = ("admin", "user", "operasyon_yoneticisi", "sofor", "servis_teknisyeni")
+    if role not in allowed_roles:
+        raise HTTPException(status_code=400, detail=f"Rol şunlardan biri olmalıdır: {', '.join(allowed_roles)}.")
     ok, msg = db.auth.create_user(body.username.strip(), body.password, role)
     if not ok:
         raise HTTPException(status_code=400, detail=msg)

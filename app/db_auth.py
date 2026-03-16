@@ -89,8 +89,9 @@ class AuthDB:
         username = (username or "").strip()
         if not username:
             return (False, "Kullanıcı adı boş olamaz.")
-        if role not in ("admin", "user"):
-            return (False, "Rol 'admin' veya 'user' olmalıdır.")
+        allowed_roles = ("admin", "user", "operasyon_yoneticisi", "sofor", "servis_teknisyeni")
+        if role not in allowed_roles:
+            return (False, f"Rol şunlardan biri olmalıdır: {', '.join(allowed_roles)}.")
         if self.get_user_by_username(username):
             return (False, "Bu kullanıcı adı zaten kullanılıyor.")
         conn = None
