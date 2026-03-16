@@ -7,7 +7,7 @@ from typing import Optional
 
 from models import AracCreate, AracUpdate, AracBelgeCreate, AracBakimCreate
 from db_instance import db
-from api.auth import get_current_user, require_can_read_arac, require_can_write_arac
+from api.auth import get_current_user, require_can_read_arac, require_can_write_arac, require_admin
 
 router = APIRouter(
     prefix="/api/arac",
@@ -198,6 +198,48 @@ async def arac_belge_ekle(arac_id: int, body: AracBelgeCreate):
             bitis_tarihi=body.bitis_tarihi,
             belge_dosya_path=body.belge_dosya_path,
         )
+        if ok:
+            return {"success": True, "message": msg}
+        raise HTTPException(status_code=400, detail=msg)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{arac_id}/belgeler/{belge_id}", dependencies=[Depends(require_admin)])
+async def arac_belge_guncelle(arac_id: int, belge_id: int, body: AracBelgeCreate):
+    """Belge günceller (sadece admin)."""
+    belge = db.belge_getir(belge_id)
+    if not belge or belge.get("arac_id") != arac_id:
+        raise HTTPException(status_code=404, detail="Belge bulunamadı")
+    if not body.bitis_tarihi:
+        raise HTTPException(status_code=400, detail="Bitiş tarihi zorunludur")
+    try:
+        ok, msg = db.belge_guncelle(
+            belge_id=belge_id,
+            belge_turu=body.belge_turu,
+            duzenlenme_tarihi=body.duzenlenme_tarihi,
+            bitis_tarihi=body.bitis_tarihi,
+            belge_dosya_path=body.belge_dosya_path,
+        )
+        if ok:
+            return {"success": True, "message": msg}
+        raise HTTPException(status_code=400, detail=msg)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{arac_id}/belgeler/{belge_id}", dependencies=[Depends(require_admin)])
+async def arac_belge_sil(arac_id: int, belge_id: int):
+    """Belge siler (sadece admin)."""
+    belge = db.belge_getir(belge_id)
+    if not belge or belge.get("arac_id") != arac_id:
+        raise HTTPException(status_code=404, detail="Belge bulunamadı")
+    try:
+        ok, msg = db.belge_sil(belge_id)
         if ok:
             return {"success": True, "message": msg}
         raise HTTPException(status_code=400, detail=msg)

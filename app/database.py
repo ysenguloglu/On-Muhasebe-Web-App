@@ -174,6 +174,15 @@ class Database:
     def belge_listele(self, *args, **kwargs):
         return self.arac.belge_listele(*args, **kwargs)
 
+    def belge_getir(self, *args, **kwargs):
+        return self.arac.belge_getir(*args, **kwargs)
+
+    def belge_guncelle(self, *args, **kwargs):
+        return self.arac.belge_guncelle(*args, **kwargs)
+
+    def belge_sil(self, *args, **kwargs):
+        return self.arac.belge_sil(*args, **kwargs)
+
     def belge_suresi_dolacak_listele(self, *args, **kwargs):
         return self.arac.belge_suresi_dolacak_listele(*args, **kwargs)
 

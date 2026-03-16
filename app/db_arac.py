@@ -276,6 +276,69 @@ class AracDB:
         self.db.close()
         return [dict(r) for r in rows] if rows else []
 
+    def belge_getir(self, belge_id: int) -> Optional[Dict]:
+        """Tek belge getirir."""
+        conn = self.db.connect()
+        cursor = self.db._get_cursor(conn)
+        q = "SELECT * FROM arac_belge WHERE id = ?"
+        q = self.db._convert_placeholders(q)
+        cursor.execute(q, (belge_id,))
+        row = cursor.fetchone()
+        self.db.close()
+        return dict(row) if row else None
+
+    def belge_guncelle(
+        self,
+        belge_id: int,
+        belge_turu: str,
+        duzenlenme_tarihi: Optional[str],
+        bitis_tarihi: str,
+        belge_dosya_path: Optional[str] = None,
+    ) -> Tuple[bool, str]:
+        """Belge kaydını günceller."""
+        conn = None
+        try:
+            conn = self.db.connect()
+            cursor = self.db._get_cursor(conn)
+            q = """
+                UPDATE arac_belge SET belge_turu=?, duzenlenme_tarihi=?, bitis_tarihi=?, belge_dosya_path=?
+                WHERE id=?
+            """
+            q = self.db._convert_placeholders(q)
+            cursor.execute(q, (belge_turu, duzenlenme_tarihi, bitis_tarihi, belge_dosya_path, belge_id))
+            conn.commit()
+            return (True, "Belge güncellendi.")
+        except Exception as e:
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            return (False, str(e))
+        finally:
+            self.db.close()
+
+    def belge_sil(self, belge_id: int) -> Tuple[bool, str]:
+        """Belge kaydını siler."""
+        conn = None
+        try:
+            conn = self.db.connect()
+            cursor = self.db._get_cursor(conn)
+            q = "DELETE FROM arac_belge WHERE id = ?"
+            q = self.db._convert_placeholders(q)
+            cursor.execute(q, (belge_id,))
+            conn.commit()
+            return (True, "Belge silindi.")
+        except Exception as e:
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            return (False, str(e))
+        finally:
+            self.db.close()
+
     def belge_suresi_dolacak_listele(self, gun: int = 30) -> List[Dict]:
         """Belirtilen gün sayısı içinde süresi dolacak belgeleri listeler (tüm araçlar)."""
         conn = self.db.connect()

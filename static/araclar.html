@@ -107,6 +107,37 @@
         .durum-doldu { color: #fff; font-weight: 600; background: #922b21; padding: 4px 8px; border-radius: 4px; }
         .belge-takip-table tbody tr { cursor: pointer; }
         .belge-takip-table tbody tr:hover { background: #f5f5f5; }
+        .page-title-case h1, .page-title-case h2, .page-title-case h3,
+        .page-title-case label, .page-title-case th, .page-title-case .back-btn,
+        .page-title-case .tab, .page-title-case button,
+        .page-title-case .btn-action-detay, .page-title-case .btn-action-duzenle, .page-title-case .btn-action-sil { text-transform: capitalize; }
+        .btn-action-detay, .btn-action-duzenle, .btn-action-sil {
+            display: inline-block;
+            padding: 10px 16px;
+            min-height: 44px;
+            min-width: 44px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            line-height: 1.3;
+            margin-right: 8px;
+            margin-bottom: 6px;
+        }
+        .btn-action-detay { background: #3498db; color: #fff; }
+        .btn-action-detay:hover { background: #2980b9; color: #fff; }
+        .btn-action-duzenle { background: #95a5a6; color: #fff; }
+        .btn-action-duzenle:hover { background: #7f8c8d; color: #fff; }
+        .btn-action-sil { background: #e74c3c; color: #fff; }
+        .btn-action-sil:hover { background: #c0392b; color: #fff; }
+        .belge-list-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: white; border-radius: 10px; padding: 24px; max-width: 420px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-box h3 { margin-bottom: 16px; color: #667eea; }
     </style>
 </head>
 <body>
@@ -132,7 +163,7 @@
             };
         })();
     </script>
-    <div class="container">
+    <div class="container page-title-case">
         <!-- Liste görünümü -->
         <div id="viewList" class="view active">
             <a href="/" class="back-btn">← Ana Sayfa</a>
@@ -312,10 +343,44 @@
                             <th>Belge türü</th>
                             <th>Düzenlenme</th>
                             <th>Bitiş tarihi</th>
+                            <th class="admin-only">İşlemler</th>
                         </tr>
                     </thead>
                     <tbody id="belgeListBody"></tbody>
                 </table>
+            </div>
+            <div id="belgeEditModal" class="modal-overlay">
+                <div class="modal-box">
+                    <h3>Belge düzenle</h3>
+                    <form id="belgeEditForm">
+                        <input type="hidden" id="be_belge_id">
+                        <div class="form-group">
+                            <label>Belge türü</label>
+                            <select id="be_turu" required>
+                                <option value="araç muayenesi">Araç muayenesi</option>
+                                <option value="trafik sigortası">Trafik sigortası</option>
+                                <option value="kasko">Kasko</option>
+                                <option value="egzoz muayenesi">Egzoz muayenesi</option>
+                                <option value="ADR sertifikası">ADR sertifikası</option>
+                                <option value="araç ruhsatı">Araç ruhsatı</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Düzenlenme tarihi</label>
+                            <input type="date" id="be_duzenlenme_tarihi">
+                        </div>
+                        <div class="form-group">
+                            <label>Bitiş tarihi *</label>
+                            <input type="date" id="be_bitis_tarihi" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Belge dosya yolu</label>
+                            <input type="text" id="be_dosya">
+                        </div>
+                        <button type="submit">Kaydet</button>
+                        <button type="button" class="btn-secondary" onclick="closeBelgeEditModal()">İptal</button>
+                    </form>
+                </div>
             </div>
             <div id="tabBakim" class="tab-content">
                 <div class="section-box arac-write">
@@ -401,8 +466,15 @@
                 return u && (u.role === 'admin' || u.role === 'operasyon_yoneticisi');
             } catch (e) { return false; }
         }
+        function isAdmin() {
+            try {
+                var u = JSON.parse(localStorage.getItem('user') || 'null');
+                return u && u.role === 'admin';
+            } catch (e) { return false; }
+        }
         function applyWriteMode() {
             if (!canWriteArac()) document.querySelectorAll('.arac-write').forEach(function(el) { el.style.display = 'none'; });
+            if (!isAdmin()) document.querySelectorAll('.admin-only').forEach(function(el) { el.style.display = 'none'; });
         }
 
         function showView(id) {
@@ -483,9 +555,9 @@
                                 '<td>' + (item.model_yili || '-') + '</td>' +
                                 '<td>' + (item.guncel_km != null ? Number(item.guncel_km).toLocaleString('tr-TR') : '-') + '</td>' +
                                 '<td>' + (item.durum || '-') + '</td>' +
-                                '<td>' +
-                                '<a href="#detay/' + item.id + '" class="btn-info" style="padding:6px 12px;text-decoration:none;display:inline-block;margin-right:6px;">Detay</a>' +
-                                (canWriteArac() ? '<button type="button" class="btn-secondary" onclick="showForm(' + item.id + ')">Düzenle</button> <button type="button" class="btn-danger" onclick="deleteArac(' + item.id + ')">Sil</button>' : '') +
+                                '<td class="belge-list-actions">' +
+                                '<a href="#detay/' + item.id + '" class="btn-action-detay">Detay</a>' +
+                                (canWriteArac() ? '<button type="button" class="btn-action-duzenle" onclick="showForm(' + item.id + ')">Düzenle</button><button type="button" class="btn-action-sil" onclick="deleteArac(' + item.id + ')">Sil</button>' : '') +
                                 '</td>';
                             tbody.appendChild(tr);
                         });
@@ -569,13 +641,46 @@
                     tbody.innerHTML = '';
                     if (data.success && data.data && data.data.length) {
                         data.data.forEach(function(b) {
-                            tbody.innerHTML += '<tr><td>' + (b.belge_turu || '-') + '</td><td>' + (b.duzenlenme_tarihi || '').toString().slice(0, 10) + '</td><td>' + (b.bitis_tarihi || '').toString().slice(0, 10) + '</td></tr>';
+                            var tr = document.createElement('tr');
+                            tr.innerHTML = '<td>' + (b.belge_turu || '-') + '</td><td>' + (b.duzenlenme_tarihi || '').toString().slice(0, 10) + '</td><td>' + (b.bitis_tarihi || '').toString().slice(0, 10) + '</td><td class="admin-only belge-list-actions"><button type="button" class="btn-action-duzenle" onclick="openBelgeEditModal(' + b.id + ')">Düzenle</button><button type="button" class="btn-action-sil" onclick="deleteBelge(' + b.id + ')">Sil</button></td>';
+                            tbody.appendChild(tr);
                         });
                     } else {
-                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888;">Belge kaydı yok.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">Belge kaydı yok.</td></tr>';
                     }
+                    applyWriteMode();
                 })
-                .catch(function(e) { document.getElementById('belgeListBody').innerHTML = '<tr><td colspan="3">Yüklenemedi.</td></tr>'; });
+                .catch(function(e) { document.getElementById('belgeListBody').innerHTML = '<tr><td colspan="4">Yüklenemedi.</td></tr>'; });
+        }
+
+        function openBelgeEditModal(belgeId) {
+            fetch(API_BASE + '/api/arac/' + currentAracId + '/belgeler')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success || !data.data) return;
+                    var b = data.data.find(function(x) { return x.id === belgeId; });
+                    if (!b) return;
+                    document.getElementById('be_belge_id').value = b.id;
+                    document.getElementById('be_turu').value = b.belge_turu || '';
+                    document.getElementById('be_duzenlenme_tarihi').value = (b.duzenlenme_tarihi || '').toString().slice(0, 10);
+                    document.getElementById('be_bitis_tarihi').value = (b.bitis_tarihi || '').toString().slice(0, 10);
+                    document.getElementById('be_dosya').value = b.belge_dosya_path || '';
+                    document.getElementById('belgeEditModal').classList.add('active');
+                })
+                .catch(function(e) { alert('Hata: ' + e.message); });
+        }
+        function closeBelgeEditModal() {
+            document.getElementById('belgeEditModal').classList.remove('active');
+        }
+        function deleteBelge(belgeId) {
+            if (!confirm('Bu belge kaydını silmek istediğinize emin misiniz?')) return;
+            fetch(API_BASE + '/api/arac/' + currentAracId + '/belgeler/' + belgeId, { method: 'DELETE' })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (res.success) { loadBelgeler(); closeBelgeEditModal(); alert('Belge silindi.'); }
+                    else alert('Hata: ' + (res.detail || res.message));
+                })
+                .catch(function(e) { alert('Hata: ' + e.message); });
         }
 
         function loadBakim(aracId) {
@@ -686,6 +791,28 @@
                     else alert('Hata: ' + (res.detail || res.message));
                 })
                 .catch(function(err) { alert('Hata: ' + err.message); });
+        });
+
+        document.getElementById('belgeEditForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var belgeId = document.getElementById('be_belge_id').value;
+            if (!belgeId || !currentAracId) return;
+            var payload = {
+                belge_turu: document.getElementById('be_turu').value,
+                duzenlenme_tarihi: document.getElementById('be_duzenlenme_tarihi').value || null,
+                bitis_tarihi: document.getElementById('be_bitis_tarihi').value,
+                belge_dosya_path: document.getElementById('be_dosya').value || null
+            };
+            fetch(API_BASE + '/api/arac/' + currentAracId + '/belgeler/' + belgeId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (res.success) { loadBelgeler(); closeBelgeEditModal(); alert('Belge güncellendi.'); }
+                    else alert('Hata: ' + (res.detail || res.message));
+                })
+                .catch(function(err) { alert('Hata: ' + err.message); });
+        });
+        document.getElementById('belgeEditModal').addEventListener('click', function(e) {
+            if (e.target === this) closeBelgeEditModal();
         });
 
         document.getElementById('bakimForm').addEventListener('submit', function(e) {
