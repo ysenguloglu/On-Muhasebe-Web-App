@@ -108,9 +108,14 @@
         .belge-takip-table tbody tr { cursor: pointer; }
         .belge-takip-table tbody tr:hover { background: #f5f5f5; }
         .page-title-case h1, .page-title-case h2, .page-title-case h3,
-        .page-title-case label, .page-title-case th, .page-title-case .back-btn,
-        .page-title-case .tab, .page-title-case button,
-        .page-title-case .btn-action-detay, .page-title-case .btn-action-duzenle, .page-title-case .btn-action-sil { text-transform: capitalize; }
+        .page-title-case label, .page-title-case th, .page-title-case td,
+        .page-title-case .back-btn, .page-title-case .tab, .page-title-case button,
+        .page-title-case a, .page-title-case span, .page-title-case .detail-info-item,
+        .page-title-case .detail-info-item strong, .page-title-case .btn-action-detay,
+        .page-title-case .btn-action-duzenle, .page-title-case .btn-action-sil,
+        .page-title-case .durum-normal, .page-title-case .durum-uyari,
+        .page-title-case .durum-kritik, .page-title-case .durum-doldu { text-transform: capitalize; }
+        .page-title-case input, .page-title-case select, .page-title-case textarea { text-transform: none; }
         .btn-action-detay, .btn-action-duzenle, .btn-action-sil {
             display: inline-block;
             padding: 10px 16px;
@@ -138,6 +143,29 @@
         .modal-overlay.active { display: flex; }
         .modal-box { background: white; border-radius: 10px; padding: 24px; max-width: 420px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .modal-box h3 { margin-bottom: 16px; color: #667eea; }
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; border-radius: 8px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .header h1 { font-size: 1.4em; }
+            .back-btn { width: 100%; text-align: center; padding: 12px; }
+            .search-filter input, .search-filter select { max-width: 100%; min-width: 0; }
+            .list-page-tabs { flex-wrap: wrap; }
+            .list-page-tabs .tab { padding: 10px 14px; font-size: 13px; }
+            table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            th, td { padding: 10px 8px; font-size: 14px; white-space: nowrap; }
+            .belge-list-actions { flex-wrap: wrap; gap: 6px; }
+            .btn-action-detay, .btn-action-duzenle, .btn-action-sil {
+                min-height: 44px; padding: 10px 14px; font-size: 14px;
+            }
+            .form-grid { grid-template-columns: 1fr; }
+            .detail-info-grid { grid-template-columns: 1fr; }
+            .tabs { flex-wrap: wrap; }
+            .tab { padding: 10px 16px; font-size: 14px; }
+            input, select, textarea { font-size: 16px; }
+            .modal-overlay { padding: 10px; align-items: flex-start; }
+            .modal-box { max-width: 100%; margin: 10px 0; }
+        }
     </style>
 </head>
 <body>
