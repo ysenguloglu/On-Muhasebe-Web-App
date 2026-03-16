@@ -197,6 +197,12 @@ async def root():
                     <p>İş proseslerini tanımlayıp takip edebilirsiniz.</p>
                 </a>
                 
+                <a href="/araclar" class="card">
+                    <div class="card-icon">🚛</div>
+                    <h2>Araçlar</h2>
+                    <p>Araç kartları, belge ve bakım takibi.</p>
+                </a>
+                
                 <a href="/kullanicilar" class="card">
                     <div class="card-icon">👤</div>
                     <h2>Kullanıcı Yönetimi</h2>
@@ -266,6 +272,16 @@ async def is_prosesi_ui():
             return f.read()
     except FileNotFoundError:
         return HTMLResponse("<h1>İş prosesi sayfası bulunamadı</h1>", status_code=404)
+
+
+@router.get("/araclar", response_class=HTMLResponse)
+async def araclar_ui():
+    """Araç yönetimi web arayüzü"""
+    try:
+        with open("static/araclar.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse("<h1>Araçlar sayfası bulunamadı</h1>", status_code=404)
 
 
 @router.get("/kullanicilar", response_class=HTMLResponse)
