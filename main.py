@@ -17,6 +17,7 @@ from api.cari import router as cari_router
 from api.is_evraki import router as is_evraki_router
 from api.is_prosesi import router as is_prosesi_router
 from api.arac import router as arac_router
+from api.sofor import router as sofor_router
 from api.excel import router as excel_router
 from api.aylik_rapor import router as aylik_rapor_router
 
@@ -106,6 +107,7 @@ app.include_router(cari_router)
 app.include_router(is_evraki_router)
 app.include_router(is_prosesi_router)
 app.include_router(arac_router)
+app.include_router(sofor_router)
 app.include_router(aylik_rapor_router)
 
 

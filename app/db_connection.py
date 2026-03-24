@@ -314,9 +314,36 @@ class DatabaseConnection:
 
             try:
                 cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS sofor (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        ad_soyad VARCHAR(255) NOT NULL,
+                        tc_kimlik_no VARCHAR(11) NOT NULL UNIQUE,
+                        telefon VARCHAR(50) NOT NULL,
+                        email VARCHAR(255),
+                        adres TEXT,
+                        ise_baslama_tarihi DATE NOT NULL,
+                        src_belge_no VARCHAR(100) NOT NULL,
+                        src_bitis_tarihi DATE NOT NULL,
+                        ehliyet_sinifi VARCHAR(30) NOT NULL,
+                        ehliyet_bitis_tarihi DATE NOT NULL,
+                        psikoteknik_bitis DATE NOT NULL,
+                        acil_iletisim VARCHAR(255) NOT NULL,
+                        iban VARCHAR(34),
+                        durum VARCHAR(20) NOT NULL DEFAULT 'aktif',
+                        olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """)
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print(f"⚠️ sofor tablosu (devam): {e}")
+
+            try:
+                cursor.execute("""
                     SELECT table_name FROM information_schema.tables
                     WHERE table_schema = DATABASE()
-                    AND table_name IN ('stok', 'cari', 'is_evraki', 'is_prosesi', 'is_prosesi_maddeleri', 'users', 'arac', 'arac_belge', 'arac_bakim')
+                    AND table_name IN ('stok', 'cari', 'is_evraki', 'is_prosesi', 'is_prosesi_maddeleri', 'users', 'arac', 'arac_belge', 'arac_bakim', 'sofor')
                 """)
                 rows = cursor.fetchall()
                 names = [r[0] for r in rows] if rows else []

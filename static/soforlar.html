@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ön Muhasebe - Şoför Yönetimi</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        h1 { color: #667eea; }
+        .back-btn { background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; color: #333; font-weight: 500; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        textarea { resize: vertical; min-height: 60px; }
+        button { background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-right: 8px; margin-bottom: 8px; }
+        button:hover { background: #5568d3; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-info { background: #3498db; }
+        .search-filter { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+        .search-filter input { max-width: 320px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background: #667eea; color: white; }
+        .list-scroll { max-height: 520px; overflow: auto; border: 1px solid #e0e0e0; border-radius: 8px; }
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; padding: 20px; overflow-y: auto; }
+        .modal-bg.active { display: block; }
+        .modal-inner { background: white; max-width: 560px; margin: 40px auto; padding: 24px; border-radius: 10px; }
+        .modal-inner h2 { color: #667eea; margin-bottom: 16px; font-size: 1.2em; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .detail-row strong { color: #555; margin-right: 12px; }
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 16px; }
+            .form-grid { grid-template-columns: 1fr; }
+            input, select, textarea { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        (function(){
+            var token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/login'; return; }
+            var orig = window.fetch;
+            window.fetch = function(url, opts) {
+                opts = opts || {};
+                opts.headers = opts.headers || {};
+                if (opts.headers instanceof Headers) opts.headers.append('Authorization', 'Bearer ' + token);
+                else opts.headers['Authorization'] = 'Bearer ' + token;
+                return orig.call(this, url, opts).then(function(res) {
+                    if (res.status === 401) {
+                        localStorage.removeItem('token'); localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }
+                    return res;
+                });
+            };
+        })();
+    </script>
+    <div class="container">
+        <div class="header">
+            <h1>🧑‍✈️ Şoför Yönetimi</h1>
+            <a href="/" class="back-btn">← Ana Sayfa</a>
+        </div>
+
+        <form id="soforForm" class="admin-only">
+            <h2 style="color: #667eea; margin-bottom: 14px; font-size: 1.1em;">Şoför ekle / düzenle</h2>
+            <div class="form-grid">
+                <div class="form-group"><label>Ad soyad *</label><input type="text" id="sf_ad_soyad" required></div>
+                <div class="form-group"><label>TC kimlik no *</label><input type="text" id="sf_tc" maxlength="11" required></div>
+                <div class="form-group"><label>Telefon *</label><input type="text" id="sf_telefon" required></div>
+                <div class="form-group"><label>E-posta</label><input type="email" id="sf_email"></div>
+                <div class="form-group"><label>İşe başlama tarihi *</label><input type="date" id="sf_ise_baslama" required></div>
+                <div class="form-group"><label>SRC belge no *</label><input type="text" id="sf_src_no" required></div>
+                <div class="form-group"><label>SRC bitiş tarihi *</label><input type="date" id="sf_src_bitis" required></div>
+                <div class="form-group"><label>Ehliyet sınıfı *</label><input type="text" id="sf_ehliyet_sinif" placeholder="Örn: E" required></div>
+                <div class="form-group"><label>Ehliyet bitiş tarihi *</label><input type="date" id="sf_ehliyet_bitis" required></div>
+                <div class="form-group"><label>Psikoteknik bitiş *</label><input type="date" id="sf_psiko_bitis" required></div>
+                <div class="form-group"><label>Acil iletişim *</label><input type="text" id="sf_acil" required placeholder="İsim / telefon"></div>
+                <div class="form-group"><label>IBAN</label><input type="text" id="sf_iban"></div>
+                <div class="form-group"><label>Durum</label>
+                    <select id="sf_durum"><option value="aktif">Aktif</option><option value="pasif">Pasif</option></select>
+                </div>
+            </div>
+            <div class="form-group"><label>Adres</label><textarea id="sf_adres" rows="2"></textarea></div>
+            <button type="submit">💾 Kaydet</button>
+            <button type="button" onclick="clearForm()">🔄 Temizle</button>
+        </form>
+
+        <h2 style="margin-top: 28px; color: #667eea; font-size: 1.15em;">Kayıtlı şoförler</h2>
+        <div class="search-filter">
+            <input type="text" id="search" placeholder="Ad, TC, telefon, SRC no ile ara..." onkeyup="loadList()">
+            <select id="durumFilter" onchange="loadList()">
+                <option value="">Tüm durumlar</option>
+                <option value="aktif">Aktif</option>
+                <option value="pasif">Pasif</option>
+            </select>
+        </div>
+        <div class="list-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ad soyad</th>
+                        <th>TC</th>
+                        <th>Telefon</th>
+                        <th>SRC bitiş</th>
+                        <th>Ehliyet bitiş</th>
+                        <th>Durum</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="detayModal" class="modal-bg" onclick="if(event.target===this)closeDetay()">
+        <div class="modal-inner" onclick="event.stopPropagation()">
+            <h2>Şoför detayı</h2>
+            <div id="detayBody"></div>
+            <button type="button" onclick="closeDetay()" style="margin-top:16px;">Kapat</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let selectedId = null;
+
+        function isAdmin() {
+            try {
+                var u = JSON.parse(localStorage.getItem('user') || 'null');
+                return u && u.role === 'admin';
+            } catch (e) { return false; }
+        }
+        function applyAdminOnly() {
+            if (!isAdmin()) document.querySelectorAll('.admin-only').forEach(function(el) { el.style.display = 'none'; });
+        }
+
+        function clearForm() {
+            document.getElementById('soforForm').reset();
+            document.getElementById('sf_durum').value = 'aktif';
+            selectedId = null;
+        }
+
+        function fmtDate(v) { return (v || '').toString().slice(0, 10) || '-'; }
+
+        async function loadList() {
+            var arama = document.getElementById('search').value;
+            var durum = document.getElementById('durumFilter').value;
+            var url = API_BASE + '/api/sofor?';
+            if (arama) url += 'arama=' + encodeURIComponent(arama) + '&';
+            if (durum) url += 'durum=' + encodeURIComponent(durum);
+            try {
+                var res = await fetch(url);
+                var data = await res.json();
+                var tbody = document.getElementById('tbody');
+                tbody.innerHTML = '';
+                if (data.success && data.data && data.data.length) {
+                    data.data.forEach(function(s) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML =
+                            '<td>' + (s.ad_soyad || '-') + '</td>' +
+                            '<td>' + (s.tc_kimlik_no || '-') + '</td>' +
+                            '<td>' + (s.telefon || '-') + '</td>' +
+                            '<td>' + fmtDate(s.src_bitis_tarihi) + '</td>' +
+                            '<td>' + fmtDate(s.ehliyet_bitis_tarihi) + '</td>' +
+                            '<td>' + (s.durum || '-') + '</td>' +
+                            '<td>' +
+                            '<button type="button" class="btn-info" onclick="openDetay(' + s.id + ')">Detay</button>' +
+                            (isAdmin() ? '<button type="button" onclick="editSofor(' + s.id + ')">Düzenle</button><button type="button" class="btn-danger" onclick="deleteSofor(' + s.id + ')">Sil</button>' : '') +
+                            '</td>';
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Kayıt yok.</td></tr>';
+                }
+            } catch (e) {
+                alert('Hata: ' + e.message);
+            }
+        }
+
+        async function openDetay(id) {
+            try {
+                var res = await fetch(API_BASE + '/api/sofor/' + id);
+                var data = await res.json();
+                if (!data.success || !data.data) return;
+                var d = data.data;
+                var rows = [
+                    ['Ad soyad', d.ad_soyad], ['TC kimlik no', d.tc_kimlik_no], ['Telefon', d.telefon],
+                    ['E-posta', d.email || '-'], ['Adres', d.adres || '-'],
+                    ['İşe başlama', fmtDate(d.ise_baslama_tarihi)], ['SRC belge no', d.src_belge_no],
+                    ['SRC bitiş', fmtDate(d.src_bitis_tarihi)], ['Ehliyet sınıfı', d.ehliyet_sinifi],
+                    ['Ehliyet bitiş', fmtDate(d.ehliyet_bitis_tarihi)], ['Psikoteknik bitiş', fmtDate(d.psikoteknik_bitis)],
+                    ['Acil iletişim', d.acil_iletisim], ['IBAN', d.iban || '-'], ['Durum', d.durum]
+                ];
+                document.getElementById('detayBody').innerHTML = rows.map(function(r) {
+                    return '<div class="detail-row"><strong>' + r[0] + '</strong><span>' + (r[1] || '-') + '</span></div>';
+                }).join('');
+                document.getElementById('detayModal').classList.add('active');
+            } catch (e) { alert('Hata: ' + e.message); }
+        }
+        function closeDetay() { document.getElementById('detayModal').classList.remove('active'); }
+
+        async function editSofor(id) {
+            try {
+                var res = await fetch(API_BASE + '/api/sofor/' + id);
+                var data = await res.json();
+                if (!data.success || !data.data) return;
+                var d = data.data;
+                selectedId = id;
+                document.getElementById('sf_ad_soyad').value = d.ad_soyad || '';
+                document.getElementById('sf_tc').value = d.tc_kimlik_no || '';
+                document.getElementById('sf_telefon').value = d.telefon || '';
+                document.getElementById('sf_email').value = d.email || '';
+                document.getElementById('sf_adres').value = d.adres || '';
+                document.getElementById('sf_ise_baslama').value = fmtDate(d.ise_baslama_tarihi);
+                document.getElementById('sf_src_no').value = d.src_belge_no || '';
+                document.getElementById('sf_src_bitis').value = fmtDate(d.src_bitis_tarihi);
+                document.getElementById('sf_ehliyet_sinif').value = d.ehliyet_sinifi || '';
+                document.getElementById('sf_ehliyet_bitis').value = fmtDate(d.ehliyet_bitis_tarihi);
+                document.getElementById('sf_psiko_bitis').value = fmtDate(d.psikoteknik_bitis);
+                document.getElementById('sf_acil').value = d.acil_iletisim || '';
+                document.getElementById('sf_iban').value = d.iban || '';
+                document.getElementById('sf_durum').value = d.durum || 'aktif';
+                window.scrollTo(0, 0);
+            } catch (e) { alert('Hata: ' + e.message); }
+        }
+
+        async function deleteSofor(id) {
+            if (!confirm('Bu şoför kaydını silmek istediğinize emin misiniz?')) return;
+            try {
+                var res = await fetch(API_BASE + '/api/sofor/' + id, { method: 'DELETE' });
+                var data = await res.json();
+                if (data.success) { alert('Silindi.'); loadList(); clearForm(); }
+                else alert(data.detail || 'Silinemedi.');
+            } catch (e) { alert('Hata: ' + e.message); }
+        }
+
+        document.getElementById('soforForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var payload = {
+                ad_soyad: document.getElementById('sf_ad_soyad').value.trim(),
+                tc_kimlik_no: document.getElementById('sf_tc').value.trim(),
+                telefon: document.getElementById('sf_telefon').value.trim(),
+                email: document.getElementById('sf_email').value.trim() || '',
+                adres: document.getElementById('sf_adres').value.trim() || '',
+                ise_baslama_tarihi: document.getElementById('sf_ise_baslama').value,
+                src_belge_no: document.getElementById('sf_src_no').value.trim(),
+                src_bitis_tarihi: document.getElementById('sf_src_bitis').value,
+                ehliyet_sinifi: document.getElementById('sf_ehliyet_sinif').value.trim(),
+                ehliyet_bitis_tarihi: document.getElementById('sf_ehliyet_bitis').value,
+                psikoteknik_bitis: document.getElementById('sf_psiko_bitis').value,
+                acil_iletisim: document.getElementById('sf_acil').value.trim(),
+                iban: document.getElementById('sf_iban').value.trim() || '',
+                durum: document.getElementById('sf_durum').value
+            };
+            if (!payload.ise_baslama_tarihi || !payload.src_bitis_tarihi || !payload.ehliyet_bitis_tarihi || !payload.psikoteknik_bitis) {
+                alert('Tüm zorunlu tarih alanlarını doldurun.');
+                return;
+            }
+            try {
+                var url = API_BASE + '/api/sofor';
+                var method = 'POST';
+                if (selectedId) { url += '/' + selectedId; method = 'PUT'; }
+                var res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                var data = await res.json();
+                if (data.success) { alert('Kaydedildi.'); clearForm(); loadList(); }
+                else alert(data.detail || 'Hata');
+            } catch (e) { alert('Hata: ' + e.message); }
+        });
+
+        applyAdminOnly();
+        loadList();
+    </script>
+</body>
+</html>

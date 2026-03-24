@@ -8,6 +8,7 @@ from .db_cari import CariDB
 from .db_is_evraki import IsEvrakiDB
 from .db_is_prosesi import IsProsesiDB
 from .db_arac import AracDB
+from .db_sofor import SoforDB
 from .db_auth import AuthDB
 
 
@@ -36,6 +37,7 @@ class Database:
         self.is_evraki = IsEvrakiDB(self.db_conn)
         self.is_prosesi = IsProsesiDB(self.db_conn)
         self.arac = AracDB(self.db_conn)
+        self.sofor = SoforDB(self.db_conn)
         self.auth = AuthDB(self.db_conn)
     
     # ========== STOK İŞLEMLERİ (Delegasyon) ==========
@@ -197,6 +199,23 @@ class Database:
 
     def bakim_uyarilari_hesapla(self, *args, **kwargs):
         return self.arac.bakim_uyarilari_hesapla(*args, **kwargs)
+
+    # ========== ŞOFÖR YÖNETİMİ (Delegasyon) ==========
+
+    def sofor_ekle(self, *args, **kwargs):
+        return self.sofor.sofor_ekle(*args, **kwargs)
+
+    def sofor_guncelle(self, *args, **kwargs):
+        return self.sofor.sofor_guncelle(*args, **kwargs)
+
+    def sofor_sil(self, *args, **kwargs):
+        return self.sofor.sofor_sil(*args, **kwargs)
+
+    def sofor_listele(self, *args, **kwargs):
+        return self.sofor.sofor_listele(*args, **kwargs)
+
+    def sofor_getir(self, *args, **kwargs):
+        return self.sofor.sofor_getir(*args, **kwargs)
 
     # ========== BAĞLANTI YÖNETİMİ (Delegasyon) ==========
     

@@ -236,3 +236,38 @@ class AracBakimCreate(BaseModel):
     bakim_tarihi: Optional[str] = ""
     bakim_km: Optional[float] = None
     maliyet: Optional[float] = None
+
+
+class SoforCreate(BaseModel):
+    """Şoför kaydı. Tarih alanları (YYYY-MM-DD) ileride uyarı/son tarih kontrolleri için DATE ile saklanır."""
+    ad_soyad: str
+    tc_kimlik_no: str
+    telefon: str
+    email: Optional[str] = ""
+    adres: Optional[str] = ""
+    ise_baslama_tarihi: str
+    src_belge_no: str
+    src_bitis_tarihi: str
+    ehliyet_sinifi: str
+    ehliyet_bitis_tarihi: str
+    psikoteknik_bitis: str
+    acil_iletisim: str
+    iban: Optional[str] = ""
+    durum: Optional[str] = "aktif"
+
+
+class SoforUpdate(BaseModel):
+    ad_soyad: str
+    tc_kimlik_no: str
+    telefon: str
+    email: Optional[str] = ""
+    adres: Optional[str] = ""
+    ise_baslama_tarihi: str
+    src_belge_no: str
+    src_bitis_tarihi: str
+    ehliyet_sinifi: str
+    ehliyet_bitis_tarihi: str
+    psikoteknik_bitis: str
+    acil_iletisim: str
+    iban: Optional[str] = ""
+    durum: Optional[str] = "aktif"

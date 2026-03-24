@@ -203,6 +203,12 @@ async def root():
                     <p>Araç kartları, belge ve bakım takibi.</p>
                 </a>
                 
+                <a href="/soforlar" class="card" data-module="soforlar">
+                    <div class="card-icon">🧑‍✈️</div>
+                    <h2>Şoför Yönetimi</h2>
+                    <p>Şoför kayıtları, SRC ve ehliyet bilgileri.</p>
+                </a>
+                
                 <a href="/kullanicilar" class="card" data-module="kullanicilar">
                     <div class="card-icon">👤</div>
                     <h2>Kullanıcı Yönetimi</h2>
@@ -288,6 +294,16 @@ async def araclar_ui():
             return f.read()
     except FileNotFoundError:
         return HTMLResponse("<h1>Araçlar sayfası bulunamadı</h1>", status_code=404)
+
+
+@router.get("/soforlar", response_class=HTMLResponse)
+async def soforlar_ui():
+    """Şoför yönetimi web arayüzü"""
+    try:
+        with open("static/soforlar.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse("<h1>Şoförler sayfası bulunamadı</h1>", status_code=404)
 
 
 @router.get("/kullanicilar", response_class=HTMLResponse)
