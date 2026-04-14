@@ -66,7 +66,7 @@ async def cari_guncelle(cari_id: int, cari: CariUpdate):
         
         result = db.cari_guncelle(
             cari_id, cari.cari_kodu, cari.unvan, cari.tip, cari.telefon,
-            cari.email, cari.adres, cari.vergi_no, cari.vergi_dairesi,
+            cari.email, cari.adres, cari.tc_kimlik_no or "", cari.vergi_no, cari.vergi_dairesi,
             cari.bakiye, cari.aciklama, cari.firma_tipi
         )
         

@@ -56,6 +56,7 @@ class CariUpdate(BaseModel):
     telefon: Optional[str] = ""
     email: Optional[str] = ""
     adres: Optional[str] = ""
+    tc_kimlik_no: Optional[str] = ""
     vergi_no: Optional[str] = ""
     vergi_dairesi: Optional[str] = ""
     bakiye: Optional[float] = 0
@@ -80,6 +81,10 @@ class IsEvrakiCreate(BaseModel):
     toplam_tutar: Optional[float] = 0
     tc_kimlik_no: Optional[str] = ""
     odeme_durumu: Optional[str] = "odenmedi"
+    musteri_email: Optional[str] = ""
+    musteri_adres: Optional[str] = ""
+    vergi_dairesi: Optional[str] = ""
+    firma_tipi: Optional[str] = "Şahıs"
 
 
 class IsEvrakiCreateWithEmail(BaseModel):
@@ -123,6 +128,10 @@ class IsEvrakiUpdate(BaseModel):
     toplam_tutar: Optional[float] = 0
     tc_kimlik_no: Optional[str] = ""
     odeme_durumu: Optional[str] = "odenmedi"
+    musteri_email: Optional[str] = ""
+    musteri_adres: Optional[str] = ""
+    vergi_dairesi: Optional[str] = ""
+    firma_tipi: Optional[str] = "Şahıs"
 
 
 class IsEvrakiUpdateWithEmail(BaseModel):

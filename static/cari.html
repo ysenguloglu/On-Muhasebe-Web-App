@@ -141,7 +141,7 @@
         }
         tr {
             display: grid;
-            grid-template-columns: 80px 200px 100px 120px 180px 120px 100px 100px 80px 100px;
+            grid-template-columns: 72px minmax(120px, 1.4fr) 88px 104px minmax(110px, 1fr) 96px 92px 92px minmax(220px, 1.2fr);
         }
         th {
             padding: 14px 12px;
@@ -186,8 +186,8 @@
             margin-right: 8px;
             margin-bottom: 6px;
         }
-        .btn-action-detay { background: #3498db; color: #fff; }
-        .btn-action-detay:hover { background: #2980b9; color: #fff; }
+        .btn-action-detay, .btn-action-goster { background: #3498db; color: #fff; }
+        .btn-action-detay:hover, .btn-action-goster:hover { background: #2980b9; color: #fff; }
         .btn-action-duzenle { background: #95a5a6; color: #fff; }
         .btn-action-duzenle:hover { background: #7f8c8d; color: #fff; }
         .btn-action-sil { background: #e74c3c; color: #fff; }
@@ -217,8 +217,14 @@
             .cari-card-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
             .cari-card-label { font-weight: 600; color: #666; font-size: 0.9em; }
             .cari-card-value { color: #333; text-align: right; margin-left: 10px; }
-            .cari-card-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
-            .cari-card-actions button { padding: 12px; font-size: 14px; margin: 0; min-height: 44px; }
+            .cari-card-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .cari-card-actions .btn-action-goster { grid-column: 1 / -1; }
+            .cari-card-actions button { padding: 12px; font-size: 14px; margin: 0; min-height: 44px; width: 100%; box-sizing: border-box; }
             input, select { font-size: 16px; }
             textarea { font-size: 16px; }
         }
@@ -336,13 +342,23 @@
                         <th>Vergi No</th>
                         <th>Firma Tipi</th>
                         <th>Bakiye</th>
-                        <th class="admin-only">İşlemler</th>
+                        <th>İşlemler</th>
                     </tr>
                 </thead>
                 <tbody id="cariTableBody">
                 </tbody>
             </table>
             <div id="cariCardsContainer"></div>
+        </div>
+    </div>
+    
+    <div id="cariDetayModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box;">
+        <div style="position: relative; background: white; padding: 24px; border-radius: 10px; max-width: 640px; width: 100%; margin: 20px auto; max-height: calc(100vh - 40px); overflow-y: auto; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 2px solid #667eea; z-index: 1;">
+                <h2 style="color: #667eea; margin: 0; font-size: 1.25rem;">Cari hesap detayı</h2>
+                <button type="button" onclick="closeCariDetayModal()" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 15px; min-height: 44px;">Kapat</button>
+            </div>
+            <div id="cariDetayContent"></div>
         </div>
     </div>
     
@@ -358,6 +374,74 @@
         }
         function applyViewerMode() {
             if (getViewerMode()) document.querySelectorAll('.admin-only').forEach(function(el) { el.style.display = 'none'; });
+        }
+        
+        function escHtml(s) {
+            if (s == null || s === undefined) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+        
+        function closeCariDetayModal() {
+            var m = document.getElementById('cariDetayModal');
+            if (m) m.style.display = 'none';
+        }
+        
+        (function bindCariModalBackdrop() {
+            var modal = document.getElementById('cariDetayModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) closeCariDetayModal();
+                });
+            }
+        })();
+        
+        async function showCari(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/cari/${id}`);
+                const result = await response.json();
+                if (!result.success || !result.data) {
+                    alert('Cari yüklenemedi: ' + (result.detail || 'Bilinmeyen hata'));
+                    return;
+                }
+                const c = result.data;
+                const bak = Number(c.bakiye) || 0;
+                const bakClass = bak >= 0 ? 'bakiye-positive' : 'bakiye-negative';
+                const adres = (c.adres || '').trim();
+                const aciklama = (c.aciklama || '').trim();
+                const gridStyle = 'display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-bottom: 16px;';
+                const fullStyle = 'grid-column: 1 / -1;';
+                const label = function(t) { return '<strong style="color:#555;display:block;margin-bottom:4px;">' + escHtml(t) + '</strong>'; };
+                const val = function(t) { return '<span style="color:#222;word-break:break-word;">' + escHtml(t) + '</span>'; };
+                let html = '<div style="' + gridStyle + '">' +
+                    '<div>' + label('Cari kodu') + val(c.cari_kodu || '—') + '</div>' +
+                    '<div>' + label('Kayıt no') + val(String(c.id != null ? c.id : '—')) + '</div>' +
+                    '<div style="' + fullStyle + '">' + label('Ünvan') + val(c.unvan || '—') + '</div>' +
+                    '<div>' + label('Tip') + val(c.tip || '—') + '</div>' +
+                    '<div>' + label('Firma tipi') + val(c.firma_tipi || 'Şahıs') + '</div>' +
+                    '<div>' + label('Telefon') + val(c.telefon || '—') + '</div>' +
+                    '<div style="' + fullStyle + '">' + label('E-posta') + val(c.email || '—') + '</div>' +
+                    '<div>' + label('TC kimlik no') + val(c.tc_kimlik_no || '—') + '</div>' +
+                    '<div>' + label('Vergi no') + val(c.vergi_no || '—') + '</div>' +
+                    '<div style="' + fullStyle + '">' + label('Vergi dairesi') + val(c.vergi_dairesi || '—') + '</div>' +
+                    '<div style="' + fullStyle + '">' + label('Bakiye') + '<span class="' + bakClass + '">' + bak.toFixed(2) + ' ₺</span></div>' +
+                    '</div>';
+                html += '<div style="margin-bottom:14px;">' + label('Adres') + '<span style="color:#222;white-space:pre-wrap;word-break:break-word;">' + escHtml(adres || '—') + '</span></div>';
+                html += '<div style="margin-bottom:14px;">' + label('Açıklama') + '<span style="color:#222;white-space:pre-wrap;word-break:break-word;">' + escHtml(aciklama || '—') + '</span></div>';
+                if (c.olusturma_tarihi) {
+                    html += '<div style="font-size:13px;color:#888;margin-top:8px;">Oluşturulma: ' + escHtml(String(c.olusturma_tarihi)) + '</div>';
+                }
+                if (c.guncelleme_tarihi) {
+                    html += '<div style="font-size:13px;color:#888;">Güncellenme: ' + escHtml(String(c.guncelleme_tarihi)) + '</div>';
+                }
+                document.getElementById('cariDetayContent').innerHTML = html;
+                document.getElementById('cariDetayModal').style.display = 'block';
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
         }
         
         async function loadCari() {
@@ -387,9 +471,10 @@
                             <td>${item.vergi_no || '-'}</td>
                             <td>${item.firma_tipi || 'Şahıs'}</td>
                             <td class="${bakiyeClass}">${bakiye.toFixed(2)} ₺</td>
-                            <td class="admin-only cari-list-actions">
-                                <button type="button" class="btn-action-duzenle" onclick="editCari(${item.id})">Düzenle</button>
-                                <button type="button" class="btn-action-sil" onclick="deleteCari(${item.id})">Sil</button>
+                            <td class="cari-list-actions">
+                                <button type="button" class="btn-action-goster" onclick="showCari(${item.id})" title="Tüm alanları göster">Göster</button>
+                                <button type="button" class="btn-action-duzenle admin-only" onclick="editCari(${item.id})">Düzenle</button>
+                                <button type="button" class="btn-action-sil admin-only" onclick="deleteCari(${item.id})">Sil</button>
                             </td>
                         `;
                         tbody.appendChild(row);
@@ -408,9 +493,10 @@
                                 <div class="cari-card-row"><span class="cari-card-label">Tip</span><span class="cari-card-value">${item.tip || '-'}</span></div>
                                 <div class="cari-card-row"><span class="cari-card-label">Telefon</span><span class="cari-card-value">${item.telefon || '-'}</span></div>
                                 <div class="cari-card-row"><span class="cari-card-label">Bakiye</span><span class="cari-card-value ${bakiyeClass}">${bakiye.toFixed(2)} ₺</span></div>
-                                <div class="admin-only cari-card-actions">
-                                    <button type="button" class="btn-action-duzenle" onclick="editCari(${item.id})">Düzenle</button>
-                                    <button type="button" class="btn-action-sil" onclick="deleteCari(${item.id})">Sil</button>
+                                <div class="cari-card-actions">
+                                    <button type="button" class="btn-action-goster" onclick="showCari(${item.id})" title="Tüm alanları göster">Göster</button>
+                                    <button type="button" class="btn-action-duzenle admin-only" onclick="editCari(${item.id})">Düzenle</button>
+                                    <button type="button" class="btn-action-sil admin-only" onclick="deleteCari(${item.id})">Sil</button>
                                 </div>
                             `;
                             cardsContainer.appendChild(card);

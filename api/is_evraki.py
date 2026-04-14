@@ -51,6 +51,40 @@ def _normalize_kullanilan_urunler(kullanilan_urunler: str) -> str:
     return json.dumps(urunler, ensure_ascii=False)
 
 
+def _sync_cari_is_evrakindan(
+    musteri_unvan: str,
+    telefon: str = "",
+    musteri_email: str = "",
+    musteri_adres: str = "",
+    tc_kimlik_no: str = "",
+    vergi_dairesi: str = "",
+    firma_tipi: str = "",
+    toplam_tutar=0,
+    odeme_durumu: str = "odenmedi",
+) -> str:
+    """İş evrakı bilgileriyle cari hesabı oluşturur veya mevcut kaydı tamamlar."""
+    if not (musteri_unvan or "").strip():
+        return ""
+    vergi_no_deger = (tc_kimlik_no or "").strip()
+    odendi = (odeme_durumu or "").strip().lower() == "odendi"
+    cari_bakiye = 0.0 if odendi else float(toplam_tutar or 0)
+    _ok, mesaj = db.cari_ekle_tc_kontrolu_ile(
+        cari_kodu="",
+        unvan=musteri_unvan.strip(),
+        tip="Müşteri",
+        telefon=telefon or "",
+        email=musteri_email or "",
+        adres=musteri_adres or "",
+        tc_kimlik_no=tc_kimlik_no or "",
+        vergi_no=vergi_no_deger,
+        vergi_dairesi=vergi_dairesi or "",
+        bakiye=cari_bakiye,
+        aciklama="İş evrakından otomatik eklendi",
+        firma_tipi=firma_tipi or "Şahıs",
+    )
+    return mesaj
+
+
 def _evrak_json_serialize(obj):
     """MySQL'den gelen Decimal, datetime gibi JSON'a uyumsuz tipleri dönüştür."""
     if obj is None:
@@ -118,7 +152,18 @@ async def is_evraki_ekle(evrak: IsEvrakiCreate):
         )
         
         if basarili:
-            return {"success": True, "message": mesaj}
+            cari_mesaji = _sync_cari_is_evrakindan(
+                evrak.musteri_unvan,
+                evrak.telefon or "",
+                evrak.musteri_email or "",
+                evrak.musteri_adres or "",
+                evrak.tc_kimlik_no or "",
+                evrak.vergi_dairesi or "",
+                evrak.firma_tipi or "Şahıs",
+                evrak.toplam_tutar or 0,
+                evrak.odeme_durumu or "odenmedi",
+            )
+            return {"success": True, "message": mesaj, "cari_mesaji": cari_mesaji}
         else:
             raise HTTPException(status_code=400, detail=mesaj)
     except HTTPException:
@@ -160,27 +205,17 @@ async def is_evraki_kaydet_ve_gonder(evrak: IsEvrakiCreateWithEmail):
             stok_mesajlari["basarili"] = basarili_mesajlar
             stok_mesajlari["hatali"] = hata_mesajlari
         
-        # Cari hesabı ekle (TC kontrolü ile). Ödendi ise bakiye 0, ödenmedi ise toplam_tutar kadar borç.
-        cari_mesaji = ""
-        if evrak.musteri_unvan:
-            vergi_no_deger = evrak.tc_kimlik_no if evrak.tc_kimlik_no else ""
-            odendi = (evrak.odeme_durumu or "").strip().lower() == "odendi"
-            cari_bakiye = 0.0 if odendi else float(evrak.toplam_tutar or 0)
-            basarili, mesaj = db.cari_ekle_tc_kontrolu_ile(
-                cari_kodu="",
-                unvan=evrak.musteri_unvan,
-                tip="Müşteri",
-                telefon=evrak.telefon,
-                email=evrak.musteri_email,
-                adres=evrak.musteri_adres,
-                tc_kimlik_no=evrak.tc_kimlik_no if evrak.tc_kimlik_no else "",
-                vergi_no=vergi_no_deger,
-                vergi_dairesi=evrak.vergi_dairesi,
-                bakiye=cari_bakiye,
-                aciklama="İş evrakından otomatik eklendi",
-                firma_tipi=evrak.firma_tipi
-            )
-            cari_mesaji = mesaj
+        cari_mesaji = _sync_cari_is_evrakindan(
+            evrak.musteri_unvan,
+            evrak.telefon or "",
+            evrak.musteri_email or "",
+            evrak.musteri_adres or "",
+            evrak.tc_kimlik_no or "",
+            evrak.vergi_dairesi or "",
+            evrak.firma_tipi or "Şahıs",
+            evrak.toplam_tutar or 0,
+            evrak.odeme_durumu or "odenmedi",
+        )
         
         # İş evrakını veritabanına kaydet (ürün adı/kodu normalize edilmiş)
         basarili, hata_mesaji = db.is_evraki_ekle(
@@ -249,7 +284,18 @@ async def is_evraki_guncelle(evrak_id: int, evrak: IsEvrakiUpdate):
         )
         
         if basarili:
-            return {"success": True, "message": mesaj}
+            cari_mesaji = _sync_cari_is_evrakindan(
+                evrak.musteri_unvan,
+                evrak.telefon or "",
+                evrak.musteri_email or "",
+                evrak.musteri_adres or "",
+                evrak.tc_kimlik_no or "",
+                evrak.vergi_dairesi or "",
+                evrak.firma_tipi or "Şahıs",
+                evrak.toplam_tutar or 0,
+                evrak.odeme_durumu or "odenmedi",
+            )
+            return {"success": True, "message": mesaj, "cari_mesaji": cari_mesaji}
         else:
             raise HTTPException(status_code=400, detail=mesaj)
     except HTTPException:
@@ -285,6 +331,18 @@ async def is_evraki_guncelle_ve_gonder(evrak_id: int, evrak: IsEvrakiUpdateWithE
         
         if not basarili:
             raise HTTPException(status_code=400, detail=f"İş evrakı güncellenemedi: {hata_mesaji}")
+        
+        cari_mesaji = _sync_cari_is_evrakindan(
+            evrak.musteri_unvan,
+            evrak.telefon or "",
+            evrak.musteri_email or "",
+            evrak.musteri_adres or "",
+            evrak.tc_kimlik_no or "",
+            evrak.vergi_dairesi or "",
+            evrak.firma_tipi or "Şahıs",
+            evrak.toplam_tutar or 0,
+            evrak.odeme_durumu or "odenmedi",
+        )
         
         # PDF oluştur ve e-posta gönder
         pdf_path = None
@@ -331,13 +389,15 @@ async def is_evraki_guncelle_ve_gonder(evrak_id: int, evrak: IsEvrakiUpdateWithE
                     "success": True,
                     "message": "İş evrakı güncellendi ancak PDF/e-posta gönderiminde hata oluştu",
                     "warning": str(e),
-                    "email_sent": False
+                    "email_sent": False,
+                    "cari_mesaji": cari_mesaji,
                 }
         
         return {
             "success": True,
             "message": "İş evrakı başarıyla güncellendi" + (" ve e-posta gönderildi" if email_sent else ""),
-            "email_sent": email_sent
+            "email_sent": email_sent,
+            "cari_mesaji": cari_mesaji,
         }
         
     except HTTPException:

@@ -53,22 +53,23 @@ class CariDB:
             self.db.close()
     
     def cari_guncelle(self, cari_id: int, cari_kodu: str, unvan: str, tip: str,
-                     telefon: str, email: str, adres: str, vergi_no: str,
+                     telefon: str, email: str, adres: str, tc_kimlik_no: str, vergi_no: str,
                      vergi_dairesi: str, bakiye: float, aciklama: str, firma_tipi: str = "Şahıs") -> bool:
         """Cari hesap bilgilerini güncelle"""
         try:
             conn = self.db.connect()
             cursor = self.db._get_cursor(conn)
             cari_kodu_val = cari_kodu if cari_kodu else None
+            tc_val = tc_kimlik_no.strip() if tc_kimlik_no and tc_kimlik_no.strip() else None
             query = """
-                UPDATE cari 
+                UPDATE cari
                 SET cari_kodu = ?, unvan = ?, tip = ?, telefon = ?, email = ?,
-                    adres = ?, vergi_no = ?, vergi_dairesi = ?, bakiye = ?,
+                    adres = ?, tc_kimlik_no = ?, vergi_no = ?, vergi_dairesi = ?, bakiye = ?,
                     aciklama = ?, firma_tipi = ?, guncelleme_tarihi = CURRENT_TIMESTAMP
                 WHERE id = ?
             """
             query = self.db._convert_placeholders(query)
-            cursor.execute(query, (cari_kodu_val, unvan, tip, telefon, email, adres, vergi_no,
+            cursor.execute(query, (cari_kodu_val, unvan, tip, telefon, email, adres, tc_val, vergi_no,
                   vergi_dairesi, bakiye, aciklama, firma_tipi, cari_id))
             conn.commit()
             self.db.close()
@@ -78,6 +79,75 @@ class CariDB:
                 return False
             print(f"Cari güncelleme hatası: {e}")
             return False
+
+    def cari_eksik_alanlari_evraktan_doldur(
+        self,
+        cari_id: int,
+        telefon: str = "",
+        email: str = "",
+        adres: str = "",
+        tc_kimlik_no: str = "",
+        vergi_no: str = "",
+        vergi_dairesi: str = "",
+        firma_tipi: str = "",
+    ) -> None:
+        """Mevcut cari kaydında boş olan iletişim/vergi alanlarını iş evrakı verisiyle doldurur."""
+        row = self.cari_getir(cari_id)
+        if not row:
+            return
+
+        def is_empty(v) -> bool:
+            if v is None:
+                return True
+            return not str(v).strip()
+
+        patches = {}
+        if telefon and telefon.strip() and is_empty(row.get("telefon")):
+            patches["telefon"] = telefon.strip()
+        if email and email.strip() and is_empty(row.get("email")):
+            patches["email"] = email.strip()
+        if adres and adres.strip() and is_empty(row.get("adres")):
+            patches["adres"] = adres.strip()
+        tc_st = (tc_kimlik_no or "").strip()
+        if tc_st and is_empty(row.get("tc_kimlik_no")):
+            patches["tc_kimlik_no"] = tc_st
+        vn_st = (vergi_no or "").strip()
+        if vn_st and is_empty(row.get("vergi_no")):
+            patches["vergi_no"] = vn_st
+        if vergi_dairesi and vergi_dairesi.strip() and is_empty(row.get("vergi_dairesi")):
+            patches["vergi_dairesi"] = vergi_dairesi.strip()
+        ft_st = (firma_tipi or "").strip()
+        if ft_st and is_empty(row.get("firma_tipi")):
+            patches["firma_tipi"] = ft_st
+
+        if not patches:
+            return
+
+        conn = None
+        try:
+            conn = self.db.connect()
+            cursor = self.db._get_cursor(conn)
+            sets = [f"{k} = ?" for k in patches.keys()]
+            vals = list(patches.values())
+            vals.append(cari_id)
+            query = f"UPDATE cari SET {', '.join(sets)}, guncelleme_tarihi = CURRENT_TIMESTAMP WHERE id = ?"
+            query = self.db._convert_placeholders(query)
+            cursor.execute(query, tuple(vals))
+            conn.commit()
+        except Exception as e:
+            print(f"Cari eksik alan tamamlama hatası: {e}")
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                    self.db.conn = None
+                except Exception:
+                    pass
 
     def cari_bakiye_artir(self, cari_id: int, tutar: float) -> bool:
         """Cari hesap bakiyesine tutar ekler (iş evrakı ödenmedi için)."""
@@ -232,12 +302,21 @@ class CariDB:
                                   vergi_dairesi: str = "", bakiye: float = 0, 
                                   aciklama: str = "", firma_tipi: str = "Şahıs") -> tuple[bool, str]:
         """TC ve VKN kontrolü yaparak cari hesap ekle"""
+        tc_st = (tc_kimlik_no or "").strip()
+        vergi_no_final = (vergi_no or "").strip()
+        if tc_st and not vergi_no_final:
+            vergi_no_final = tc_st
+
         # TC kimlik no kontrolü
-        if tc_kimlik_no and tc_kimlik_no.strip():
+        if tc_st:
             mevcut_cari = self.cari_tc_ile_ara(tc_kimlik_no)
             if mevcut_cari:
                 if bakiye != 0:
                     self.cari_bakiye_artir(mevcut_cari["id"], bakiye)
+                self.cari_eksik_alanlari_evraktan_doldur(
+                    mevcut_cari["id"], telefon, email, adres, tc_kimlik_no or "",
+                    vergi_no_final, vergi_dairesi, firma_tipi,
+                )
                 return (True, f"Bu TC kimlik no'ya sahip cari hesap zaten mevcut: {mevcut_cari.get('unvan', '')}")
         
         # VKN (vergi_no) kontrolü
@@ -253,6 +332,10 @@ class CariDB:
                 if row:
                     if bakiye != 0:
                         self.cari_bakiye_artir(row["id"], bakiye)
+                    self.cari_eksik_alanlari_evraktan_doldur(
+                        row["id"], telefon, email, adres, tc_kimlik_no or "",
+                        vergi_no_final, vergi_dairesi, firma_tipi,
+                    )
                     return (True, f"Bu VKN'ye sahip cari hesap zaten mevcut: {row.get('unvan', '')}")
             finally:
                 if conn:
@@ -262,18 +345,18 @@ class CariDB:
                     except:
                         pass
         
-        if not tc_kimlik_no or not tc_kimlik_no.strip():
+        if not tc_st:
             mevcut_cari = self.cari_unvan_ile_ara(unvan)
             if mevcut_cari:
                 if not mevcut_cari.get('tc_kimlik_no'):
-                    if tc_kimlik_no and tc_kimlik_no.strip():
+                    if tc_st:
                         conn = None
                         try:
                             conn = self.db.connect()
                             cursor = self.db._get_cursor(conn)
                             query = "UPDATE cari SET tc_kimlik_no = ? WHERE id = ?"
                             query = self.db._convert_placeholders(query)
-                            cursor.execute(query, (tc_kimlik_no.strip(), mevcut_cari['id']))
+                            cursor.execute(query, (tc_st, mevcut_cari['id']))
                             conn.commit()
                         except Exception as e:
                             print(f"TC güncelleme hatası: {e}")
@@ -291,13 +374,14 @@ class CariDB:
                                     pass
                 if bakiye != 0:
                     self.cari_bakiye_artir(mevcut_cari["id"], bakiye)
+                self.cari_eksik_alanlari_evraktan_doldur(
+                    mevcut_cari["id"], telefon, email, adres, tc_kimlik_no or "",
+                    vergi_no_final, vergi_dairesi, firma_tipi,
+                )
                 return (True, f"Aynı ünvana sahip cari hesap zaten mevcut: {unvan}")
         
         if not cari_kodu or not cari_kodu.strip():
             cari_kodu = self.cari_sonraki_kod_olustur()
-        
-        if tc_kimlik_no and tc_kimlik_no.strip() and not vergi_no:
-            vergi_no = tc_kimlik_no.strip()
         
         conn = None
         try:
@@ -327,13 +411,17 @@ class CariDB:
                     pass
         
         if self.cari_ekle(cari_kodu, unvan, tip, telefon, email, adres,
-                         tc_kimlik_no, vergi_no, vergi_dairesi, bakiye, aciklama, firma_tipi):
+                         tc_kimlik_no, vergi_no_final, vergi_dairesi, bakiye, aciklama, firma_tipi):
             return (True, f"Cari hesap başarıyla eklendi (Cari Kodu: {cari_kodu})")
         else:
             mevcut_cari = self.cari_unvan_ile_ara(unvan)
             if mevcut_cari:
                 if bakiye != 0:
                     self.cari_bakiye_artir(mevcut_cari["id"], bakiye)
+                self.cari_eksik_alanlari_evraktan_doldur(
+                    mevcut_cari["id"], telefon, email, adres, tc_kimlik_no or "",
+                    vergi_no_final, vergi_dairesi, firma_tipi,
+                )
                 return (True, f"Aynı ünvana sahip cari hesap zaten mevcut: {unvan}")
             return (False, "Cari hesap eklenirken bir hata oluştu")
 
