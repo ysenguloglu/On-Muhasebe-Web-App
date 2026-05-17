@@ -504,8 +504,8 @@
                 <input type="number" id="modal_fiyat" step="0.01" min="0" required>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="urunModalSubmitBtn" onclick="addUrun()" style="flex: 1;">💾 Ekle</button>
-                <button onclick="closeUrunModal()" style="flex: 1; background: #95a5a6;">❌ İptal</button>
+                <button type="button" id="urunModalSubmitBtn" onclick="addUrun()" style="flex: 1;">💾 Ekle</button>
+                <button type="button" onclick="closeUrunModal()" style="flex: 1; background: #95a5a6;">❌ İptal</button>
             </div>
         </div>
     </div>
@@ -640,8 +640,8 @@
                         <small>Adet: ${urun.adet} × ${urun.birim_fiyat.toFixed(2)} ₺ = ${urun.toplam.toFixed(2)} ₺</small>
                     </div>
                     <div class="urun-item-actions">
-                        <button onclick="editUrun(${index})">✏️</button>
-                        <button class="btn-danger" onclick="removeUrun(${index})">🗑️</button>
+                        <button type="button" onclick="editUrun(${index})">✏️</button>
+                        <button type="button" class="btn-danger" onclick="removeUrun(${index})">🗑️</button>
                     </div>
                 `;
                 container.appendChild(div);
