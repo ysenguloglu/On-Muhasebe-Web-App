@@ -486,7 +486,7 @@
     <!-- Ürün Ekleme Modal -->
     <div id="urunModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;">
-            <h3 style="margin-bottom: 20px;">Ürün Ekle</h3>
+            <h3 id="urunModalTitle" style="margin-bottom: 20px;">Ürün Ekle</h3>
             <div class="form-group">
                 <label>Ürün Kodu</label>
                 <input type="text" id="modal_urun_kodu">
@@ -504,7 +504,7 @@
                 <input type="number" id="modal_fiyat" step="0.01" min="0" required>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="addUrun()" style="flex: 1;">💾 Ekle</button>
+                <button id="urunModalSubmitBtn" onclick="addUrun()" style="flex: 1;">💾 Ekle</button>
                 <button onclick="closeUrunModal()" style="flex: 1; background: #95a5a6;">❌ İptal</button>
             </div>
         </div>
@@ -526,6 +526,7 @@
     <script>
         const API_BASE = window.location.origin;
         let urunler = [];
+        let editingUrunIndex = null;
         let tumEvraklar = []; // Tüm evrakları sakla (arama için)
         
         // Form ve liste başlatma (sayfa yüklemede ve form temizlemede kullanılır)
@@ -547,16 +548,42 @@
         }
         window.onload = initForm;
         
+        function updateUrunModalMode() {
+            const isEdit = editingUrunIndex !== null;
+            document.getElementById('urunModalTitle').textContent = isEdit ? 'Ürün Düzenle' : 'Ürün Ekle';
+            document.getElementById('urunModalSubmitBtn').textContent = isEdit ? '💾 Güncelle' : '💾 Ekle';
+        }
+        
         function showUrunEkleModal() {
+            editingUrunIndex = null;
+            document.getElementById('modal_urun_kodu').value = '';
+            document.getElementById('modal_urun_adi').value = '';
+            document.getElementById('modal_adet').value = '';
+            document.getElementById('modal_fiyat').value = '';
+            updateUrunModalMode();
+            document.getElementById('urunModal').style.display = 'block';
+        }
+        
+        function editUrun(index) {
+            const urun = urunler[index];
+            if (!urun) return;
+            editingUrunIndex = index;
+            document.getElementById('modal_urun_kodu').value = urun.urun_kodu || '';
+            document.getElementById('modal_urun_adi').value = urun.urun_adi || '';
+            document.getElementById('modal_adet').value = urun.adet;
+            document.getElementById('modal_fiyat').value = urun.birim_fiyat;
+            updateUrunModalMode();
             document.getElementById('urunModal').style.display = 'block';
         }
         
         function closeUrunModal() {
             document.getElementById('urunModal').style.display = 'none';
+            editingUrunIndex = null;
             document.getElementById('modal_urun_kodu').value = '';
             document.getElementById('modal_urun_adi').value = '';
             document.getElementById('modal_adet').value = '';
             document.getElementById('modal_fiyat').value = '';
+            updateUrunModalMode();
         }
         
         function addUrun() {
@@ -570,13 +597,19 @@
                 return;
             }
             
-            urunler.push({
+            const urunData = {
                 urun_kodu: urun_kodu,
                 urun_adi: urun_adi,
                 adet: adet,
                 birim_fiyat: fiyat,
                 toplam: adet * fiyat
-            });
+            };
+            
+            if (editingUrunIndex !== null) {
+                urunler[editingUrunIndex] = urunData;
+            } else {
+                urunler.push(urunData);
+            }
             
             updateUrunListesi();
             closeUrunModal();
@@ -607,6 +640,7 @@
                         <small>Adet: ${urun.adet} × ${urun.birim_fiyat.toFixed(2)} ₺ = ${urun.toplam.toFixed(2)} ₺</small>
                     </div>
                     <div class="urun-item-actions">
+                        <button onclick="editUrun(${index})">✏️</button>
                         <button class="btn-danger" onclick="removeUrun(${index})">🗑️</button>
                     </div>
                 `;
